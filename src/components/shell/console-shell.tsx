@@ -7,17 +7,19 @@ import { COPY } from "@/lib/copy";
 import { useQuery } from "@/lib/hooks";
 import { Skeleton } from "@/components/ui/primitives";
 import { TopBar } from "./top-bar";
+import { LoadError } from "@/components/guard/request-parts";
 
 export function ConsoleShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const session = useQuery("session", (api) => api.getSession());
+  const session = useQuery("session", (api) => api.getSession(), { pollMs: API_MODE === "live" ? 30_000 : undefined });
 
   useEffect(() => {
     if (!session.loading && session.data === null) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
   }, [session.loading, session.data, router, pathname]);
 
   if (!session.data) {
+    if (session.error) return <main className="mx-auto max-w-[560px] py-16 gutter"><LoadError error={session.error} retry={session.refetch} /></main>;
     return (
       <div className="min-h-dvh" aria-busy="true">
         <div className="flex h-(--topbar) items-center gap-6 border-b border-rule gutter">

@@ -1,6 +1,6 @@
 # Frontend Handoff
 
-Status: frontend **complete in mock mode** (2026-11-03). Backend foundation and Sandbox REST adapter are now implemented; see `PAYPAL_INTEGRATION.md` and `TEST_REPORT.md`. The real OpenAI provider is now implemented; live inference and real payer checkout remain unverified. See `AI_RISK_ENGINE.md` and `DEMO_VERIFICATION.md`. Existing frontend components are unchanged.
+Status (2026-11-04): frontend **connected to the real backend by default**. Session, CSRF, reviews, policy decisions, persisted ledger and cursor pagination are verified through real API routes and PostgreSQL. Payment orchestration and recovery are covered by actual handlers with FakePayPal and explicitly intercepted browser tests. Genuine PayPal payer checkout and OpenAI inference remain unverified without credentials. See `FRONTEND_QA.md` and `UX_CHANGELOG.md`.
 Read first: `AGENTS.md` (binding rules), `DESIGN_SYSTEM.md` (constitution), `API_CONTRACT.md`, `PAYMENT_STATE_MACHINE.md`.
 
 ---
@@ -9,13 +9,14 @@ Read first: `AGENTS.md` (binding rules), `DESIGN_SYSTEM.md` (constitution), `API
 
 ```bash
 pnpm install
-pnpm dev                      # http://localhost:3000 (mock mode by default)
+pnpm dev                      # http://localhost:3000 (live; configure .env.local)
+NEXT_PUBLIC_API_MODE=mock pnpm dev # explicit offline demonstration
 pnpm check                    # typecheck + lint + tests + production build
 ```
 
 | Env | Values | Effect |
 |---|---|---|
-| `NEXT_PUBLIC_API_MODE` | `mock` (default) / `live` | Selects the data adapter. No UI code changes between modes. |
+| `NEXT_PUBLIC_API_MODE` | `live` (default) / `mock` | Selects the data adapter. No UI code changes between modes. |
 
 Mock passcodes: `reviewer` (M. Okafor) and `operator` (S. Lindqvist). In mock mode you are signed in as the reviewer by default, and the user menu can switch roles.
 
@@ -81,6 +82,7 @@ Implement these in `src/app/api/v1/**/route.ts`, importing schemas from `src/con
 | `getPayment` | `GET /payments/{id}` | 2.7 |
 | `capturePayment` | `POST /payments/{id}/capture` `{ simulate }` | 2.8 |
 | `reconcilePayment` | `POST /payments/{id}/reconcile` | 2.9 |
+| `recordPayerCancel` | `POST /payments/{id}/payer-cancel` | 8.1 |
 | `listAuditEvents` / `auditCsvUrl` | `GET /audit-events` (+ `format=csv`) | 2.10 |
 | `verifyAuditChain` | `GET /audit-events/verify` | 2.11 |
 | `getActivePolicy` | `GET /policies/active` | 2.12 |
@@ -104,7 +106,7 @@ Behaviours the UI relies on:
 
 1. Implement the route handlers and validate inputs with `src/contract`. Build responses as contract objects.
 2. Add a contract test per route: parse the handler output with the Zod schema (see `tests/boundary.test.ts` for the pattern).
-3. Run with `NEXT_PUBLIC_API_MODE=live pnpm dev`. Do not edit components. If a screen breaks, the response does not match the contract: fix the backend, or amend `API_CONTRACT.md` first and then `src/contract`.
+3. Run with `NEXT_PUBLIC_API_MODE=live pnpm dev` (the default). Responses are parsed with shared schemas. Inspect both the adapter and actual route behavior before assigning an integration failure; frontend lifecycle and query bugs can occur even with valid responses.
 4. Walk scenarios A–E with `scripts/visual-qa.cjs` (§7) and compare against the mock screenshots.
 5. Keep the mock adapter. It is the offline demo fallback and the fixture source for UI work.
 
@@ -136,13 +138,14 @@ Found and fixed during QA:
 | Search autofocus opened the phone keyboard | Autofocus only on fine-pointer devices |
 
 **Not verified:**
-- The live PayPal JS SDK path. It has no backend or client ID, so it has never run.
-- Dark mode. The tokens are defined, but the screens were not inspected in dark mode.
+- Genuine PayPal JS SDK checkout with Sandbox app credentials and a signed-in payer. Stable lifecycle, SDK-load recovery and funding-decline orchestration are separately tested with explicit boundary fixtures.
+- Full dark-mode acceptance across every route. Representative dark/reduced-motion request states are inspected in frontend QA.
 - Screen-reader output. The semantics were reviewed in code, but no VoiceOver pass was done.
 
 ## 8. Known gaps (for the next contributor)
 
 - No websocket push; live mode polls.
-- `/checkout/cancel` assumes the payment ID is in the query string (`cancel_url` must include `?payment=`).
-- No i18n. All strings are in `src/lib/copy.ts` plus page files.
-- The landing ledger excerpt is static, fictional sample data.
+- Return/cancel use the backend-provided payment ID; both preserve it across sign-in. A return token never proves payer approval.
+- No i18n. Canonical state/recovery copy is in `src/lib/copy.ts`; some legacy page labels remain inline.
+- The landing ledger excerpt is explicitly labelled illustrative fictional data.
+- Run `scripts/frontend-qa.cjs` against a disposable live environment for real-backend UI and intercepted payment-boundary coverage. See `FRONTEND_QA.md`.

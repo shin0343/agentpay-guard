@@ -9,7 +9,7 @@ import { useNow, useQuery } from "@/lib/hooks";
 import { Icon } from "@/components/ui/icon";
 import { ButtonLink, IdTag, Notice } from "@/components/ui/primitives";
 import { DetailSkeleton } from "@/components/guard/request-detail";
-import { LoadError, RequestActions, requestTitle } from "@/components/guard/request-parts";
+import { LoadError, RequestActions, StaleNotice, requestTitle } from "@/components/guard/request-parts";
 import { PayPalZone } from "@/components/guard/paypal-zone";
 import { TwoKey } from "@/components/guard/verdict";
 
@@ -17,14 +17,15 @@ const PAYABLE = ["ALLOWED", "CHECKOUT_PENDING", "PAYMENT_FAILED"];
 
 export default function CheckoutPage() {
   const { id } = useParams<{ id: string }>();
-  const q = useQuery(`request:${id}`, (api) => api.getPurchaseRequest(id));
+  const q = useQuery(`request:${id}`, (api) => api.getPurchaseRequest(id), { pollMs: API_MODE === "live" ? 3000 : undefined });
   const now = useNow(1000);
   const r = q.data;
 
   if (q.error && !r) return <div className="mx-auto max-w-[680px] py-8 gutter"><LoadError error={q.error} retry={q.refetch} /></div>;
   if (!r) return <DetailSkeleton />;
 
-  const payable = PAYABLE.includes(r.status) && (r.status !== "PAYMENT_FAILED" || r.next_actions.includes("retry_payment"));
+  const payable = PAYABLE.includes(r.status) && r.next_actions.some((action) => ["start_checkout", "resume_checkout", "retry_payment"].includes(action))
+    && (!r.decision?.expires_at || new Date(r.decision.expires_at).getTime() > now);
   const expiresIn = r.decision?.expires_at ? new Date(r.decision.expires_at).getTime() - now : null;
 
   return (
@@ -36,12 +37,13 @@ export default function CheckoutPage() {
       <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="t-label text-muted">Checkout</p>
-          <h1 className="mt-1 t-display-m">Pay {r.merchant.name}</h1>
-          <p className="mt-1 t-small text-ink-2">{requestTitle(r)} · <IdTag id={r.id} label="request ID" /></p>
+          <h1 className="mt-1 t-display-m">{COPY.approvePayment}</h1>
+          <p className="mt-1 t-small text-ink-2">{requestTitle(r)} · {r.merchant.name} · <IdTag id={r.id} label="request ID" /></p>
         </div>
         <p className="t-amount-l">{formatMoney(r.amount)}</p>
       </header>
 
+      {!!q.error && <StaleNotice retry={q.refetch} />}
       <div className="border-y border-rule"><TwoKey keys={r.keys} /></div>
 
       {payable ? (

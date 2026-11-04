@@ -1,13 +1,15 @@
 "use client";
 
 import { RequestDetail } from "@/components/guard/request-detail";
-import { EmptyState } from "@/components/guard/request-parts";
+import { EmptyState, LoadError } from "@/components/guard/request-parts";
+import { API_MODE } from "@/lib/api";
 import { useQuery } from "@/lib/hooks";
 
 /** Desktop: shows the newest request beside the queue. Mobile: the layout shows only the queue. */
 export default function RequestsIndex() {
-  const q = useQuery("newest", (api) => api.listPurchaseRequests({ limit: 1 }));
+  const q = useQuery("newest", (api) => api.listPurchaseRequests({ limit: 1 }), { pollMs: API_MODE === "live" ? 3000 : undefined });
   const first = q.data?.data[0];
+  if (q.error && !q.data) return <div className="p-8"><LoadError error={q.error} retry={q.refetch} /></div>;
   if (!q.data) return null;
   if (!first) {
     return (

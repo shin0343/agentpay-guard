@@ -58,6 +58,7 @@ export interface GuardApi {
   getPayment(id: string): Promise<Payment>;
   capturePayment(id: string, simulate: "none" | "instrument_declined", opts?: MutationOptions): Promise<RequestWithPayment>;
   reconcilePayment(id: string, opts?: MutationOptions): Promise<RequestWithPayment>;
+  recordPayerCancel(id: string, opts?: MutationOptions): Promise<void>;
   getCheckoutConfig(): Promise<CheckoutConfig>;
 
   // Ledger & policy (§2.10–2.12)
@@ -72,7 +73,7 @@ export interface GuardApi {
 
   /**
    * Push notifications for state changes. The mock adapter emits on every mutation;
-   * the live adapter returns a no-op unsubscribe and the UI falls back to polling.
+   * the live adapter notifies after mutations and polls for external changes.
    */
   subscribe(listener: () => void): () => void;
 

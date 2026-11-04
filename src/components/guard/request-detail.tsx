@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { API_MODE } from "@/lib/api";
-import { verdictFor } from "@/lib/copy";
+import { COPY, verdictFor } from "@/lib/copy";
 import { shortId } from "@/lib/format";
 import { useQuery } from "@/lib/hooks";
 import { Icon } from "@/components/ui/icon";
 import { Notice, Skeleton } from "@/components/ui/primitives";
-import { AgentQuote, LoadError, RequestActions, RequestHeader, RequestLedger, usePaypalCallCount } from "./request-parts";
+import { AgentQuote, LoadError, RequestActions, RequestHeader, RequestLedger, StaleNotice, usePaypalCallCount } from "./request-parts";
 import { DecisionTrace } from "./trace";
 import { TwoKey, VerdictMark } from "./verdict";
 
@@ -50,11 +50,14 @@ export function RequestDetail({ id, replayed, showBack = true }: { id: string; r
 
       <div id="request-title"><RequestHeader r={r} /></div>
 
+      {!!q.error && <StaleNotice retry={q.refetch} />}
+
       <VerdictMark key={r.status} tone={v.tone} word={v.word} reason={v.reason} tag={v.tag} animate={r.status !== firstStatus} />
 
       <div className="space-y-4">
         <div className="border-y border-rule"><TwoKey keys={r.keys} /></div>
-        <RequestActions r={r} />
+        <div className="decision-actions"><RequestActions r={r} /></div>
+        {r.status === "ALLOWED" && <p className="t-small text-ink-2">{COPY.notPaidYet}</p>}
       </div>
 
       {r.duplicate_of && (
@@ -66,6 +69,7 @@ export function RequestDetail({ id, replayed, showBack = true }: { id: string; r
       <DecisionTrace evaluation={r.evaluation} decision={r.decision} evaluating={evaluating} animate={sawEvaluating} />
 
       <AgentQuote text={r.justification} />
+      {r.review?.note && <AgentQuote text={r.review.note} title={COPY.reviewerNote} sourceLabel={COPY.reviewerSource} />}
 
       {(r.status === "BLOCKED" || r.status === "REJECTED") && paypalCalls !== null && (
         <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-y border-rule py-3">
@@ -83,7 +87,7 @@ export function RequestDetail({ id, replayed, showBack = true }: { id: string; r
 
 export function DetailSkeleton() {
   return (
-    <div className="mx-auto max-w-[880px] space-y-6 pt-8 gutter" aria-busy="true" aria-label="Loading request">
+    <div role="status" className="mx-auto max-w-[880px] space-y-6 pt-8 gutter" aria-busy="true" aria-label="Loading request">
       <div className="flex justify-between">
         <Skeleton className="h-6 w-1/2" />
         <Skeleton className="h-7 w-28" />

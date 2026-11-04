@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Fragment, Suspense, useDeferredValue, useEffect, useRef, useState } from "react";
 import { AuditEventType, RequestStatus, type AuditEvent } from "@/contract";
 import { API_MODE } from "@/lib/api";
-import { EVENT_LABEL, STATUS } from "@/lib/copy";
+import { COPY, EVENT_LABEL, STATUS, auditSummary } from "@/lib/copy";
 import { clock, dayKey, formatMoney, shortDate } from "@/lib/format";
-import { useApi, useHotkeys, useNow, useQuery } from "@/lib/hooks";
+import { useApi, useHotkeys, useLoadMore, useNow, useQuery } from "@/lib/hooks";
 import { Icon } from "@/components/ui/icon";
 import { Button, IdTag, SearchField, Skeleton, StatusLabel, cx } from "@/components/ui/primitives";
-import { EmptyState, LoadError } from "@/components/guard/request-parts";
+import { EmptyState, LoadError, StaleNotice } from "@/components/guard/request-parts";
 
 const SELECT = "h-10 rounded-md border border-rule-strong bg-raised pl-3 pr-8 t-small text-ink appearance-none bg-no-repeat";
 
@@ -45,11 +45,12 @@ function Ledger() {
     q: query || undefined,
     type: type ? [type as AuditEventType] : undefined,
     state: state ? [state as RequestStatus] : undefined,
-    limit: 200,
+    limit: 100,
   };
   const list = useQuery(`audit:${query}:${type}:${state}`, (api) => api.listAuditEvents(filters), { pollMs: API_MODE === "live" ? 5000 : undefined });
   const chain = useQuery("chain", (api) => api.verifyAuditChain(), { pollMs: API_MODE === "live" ? 15000 : undefined });
-  const rows = list.data?.data ?? [];
+  const pages = useLoadMore(`audit:${query}:${type}:${state}`, list.data, (cursor) => api.listAuditEvents({ ...filters, cursor }));
+  const rows = pages.rows;
   const now = useNow(60_000);
   const today = dayKey(now);
 
@@ -72,7 +73,7 @@ function Ledger() {
       <header className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
         <h1 className="t-display-m">Ledger</h1>
         <p className="t-small" aria-live="polite">
-          {chain.data ? (
+          {chain.error ? <span className="text-review">{COPY.chainUnavailable}</span> : chain.data ? (
             chain.data.ok ? (
               <span className="inline-flex items-center gap-1.5 text-ink-2">
                 <Icon name="check" size={14} className="text-allow" />
@@ -110,7 +111,8 @@ function Ledger() {
       </div>
 
       <div className="mt-6">
-        {list.error && !list.data ? (
+        {!!list.error && list.data && <div className="mb-4"><StaleNotice retry={list.refetch} /></div>}
+        {!!list.error && !list.data ? (
           <LoadError error={list.error} retry={list.refetch} />
         ) : list.loading ? (
           <div className="space-y-4 border-t border-rule pt-4" aria-busy="true">
@@ -124,7 +126,7 @@ function Ledger() {
             <caption className="sr-only">Audit events, newest first</caption>
             <thead>
               <tr className="border-b border-rule-strong text-left">
-                <th scope="col" className="w-[84px] py-2 pr-3 font-normal"><span className="t-label text-muted">Time</span></th>
+                <th scope="col" className="w-[72px] py-2 pr-3 font-normal md:w-[84px]"><span className="t-label text-muted">Time</span></th>
                 <th scope="col" className="py-2 pr-3 font-normal"><span className="t-label text-muted">Event</span></th>
                 <th scope="col" className="hidden py-2 pr-3 font-normal md:table-cell"><span className="t-label text-muted">Request</span></th>
                 <th scope="col" className="hidden py-2 pr-3 font-normal lg:table-cell"><span className="t-label text-muted">Actor</span></th>
@@ -149,12 +151,14 @@ function Ledger() {
                           aria-expanded={expanded}
                           aria-controls={`evt-${e.id}`}
                           onClick={() => setOpen(expanded ? null : e.id)}
-                          className="group inline-flex items-center gap-1.5 text-left"
+                          className="group inline-flex min-h-10 items-center gap-1.5 text-left"
                         >
                           <Icon name="chevronRight" size={12} className={cx("text-muted transition-transform duration-(--t-fast)", expanded && "rotate-90")} />
-                          <span className="t-data text-ink [overflow-wrap:anywhere] group-hover:underline underline-offset-4">{e.type}</span>
+                          <span className="hidden t-data text-ink [overflow-wrap:anywhere] group-hover:underline underline-offset-4 md:inline">{e.type}</span>
+                          <span className="t-small font-medium text-ink md:hidden">{EVENT_LABEL[e.type]}</span>
                         </button>
-                        <p className="mt-0.5 t-small text-ink-2">{e.summary}</p>
+                        {auditSummary(e) && <p className="mt-0.5 line-clamp-2 t-small text-ink-2 md:line-clamp-none">{auditSummary(e)}</p>}
+                        {e.purchase_request_id && <Link href={`/requests/${e.purchase_request_id}`} className="inline-flex min-h-10 items-center t-data text-muted underline underline-offset-4 md:hidden">{e.purchase_request_id.slice(0, 5)}…{e.purchase_request_id.slice(-4)}</Link>}
                       </td>
                       <td className="hidden py-3 pr-3 md:table-cell">
                         {e.purchase_request_id ? (
@@ -180,7 +184,7 @@ function Ledger() {
                     {expanded && (
                       <tr id={`evt-${e.id}`} className="border-b border-rule bg-sunken/70">
                         <td colSpan={6} className="px-0 pb-4 pt-1">
-                          <dl className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-1 rounded-md border border-rule bg-raised p-4 t-data text-[12px]! sm:grid-cols-[160px_1fr]">
+                          <dl className="grid grid-cols-1 gap-x-4 gap-y-1 bg-raised p-4 t-data text-[12px]! sm:grid-cols-[160px_minmax(0,1fr)]">
                             {[
                               ["event", e.id],
                               ["seq", String(e.seq)],
@@ -191,7 +195,7 @@ function Ledger() {
                               ["prev_hash", e.prev_hash],
                             ].map(([k, v]) => (
                               <Fragment key={k}>
-                                <dt className="text-muted">{k}</dt>
+                                <dt className="mt-2 break-all text-muted sm:mt-0">{k}</dt>
                                 <dd className="min-w-0 break-all text-ink-2">{v}</dd>
                               </Fragment>
                             ))}
@@ -206,6 +210,8 @@ function Ledger() {
           </table>
           </div>
         )}
+        {pages.hasMore && <div className="mt-4"><Button loading={pages.busy} onClick={pages.loadMore}>{COPY.loadEvents}</Button></div>}
+        {!!pages.error && <div className="mt-4"><LoadError error={pages.error} retry={pages.loadMore} /></div>}
       </div>
     </div>
   );

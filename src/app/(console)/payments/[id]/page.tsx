@@ -3,41 +3,21 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { Payment, PurchaseRequest } from "@/contract";
+import type { Payment } from "@/contract";
 import { API_MODE } from "@/lib/api";
-import { COPY, type Tone } from "@/lib/copy";
+import { COPY, isVerifiedPaid, paymentOutcome, type Tone } from "@/lib/copy";
 import { clock, formatMoney } from "@/lib/format";
-import { useApi, useQuery } from "@/lib/hooks";
+import { useApi, useIntentKey, useQuery } from "@/lib/hooks";
 import { Icon } from "@/components/ui/icon";
-import { ButtonLink, IdTag, Label, Notice, StatusLabel, StatusLine } from "@/components/ui/primitives";
+import { Button, ButtonLink, IdTag, Label, Notice, StatusLabel, StatusLine } from "@/components/ui/primitives";
 import { DetailSkeleton } from "@/components/guard/request-detail";
-import { LoadError, RequestActions, requestTitle } from "@/components/guard/request-parts";
+import { LoadError, RequestActions, StaleNotice, errorMessage, requestTitle } from "@/components/guard/request-parts";
 import { TwoKey, VerdictMark } from "@/components/guard/verdict";
-
-function outcome(p: Payment, r: PurchaseRequest): { tone: Tone; word: string; reason: string; tag: string } {
-  const mock = p.paypal.environment === "mock";
-  switch (p.status) {
-    case "COMPLETED":
-      return { tone: "allow", word: "Paid.", reason: `${formatMoney(p.amount)} to ${r.merchant.name}.`, tag: mock ? "SIMULATED" : "PAID" };
-    case "DECLINED":
-    case "FAILED":
-      return { tone: "block", word: "Not paid.", reason: p.failure?.message ?? "The capture did not complete. No payment was taken.", tag: "NOT PAID" };
-    case "PENDING":
-      return { tone: "review", word: "Payment pending.", reason: "PayPal is holding this capture. We'll update when it settles.", tag: "PENDING" };
-    case "CAPTURING":
-      return { tone: "neutral", word: "Confirming.", reason: "Confirming the capture with PayPal. Nothing is shown as paid until it settles.", tag: "CAPTURING" };
-    case "VOIDED":
-      return { tone: "neutral", word: "Cancelled.", reason: "The order was abandoned. Nothing was charged.", tag: "VOIDED" };
-    case "EXPIRED":
-      return { tone: "neutral", word: "Expired.", reason: "The PayPal order expired. Nothing was charged.", tag: "EXPIRED" };
-    default:
-      return { tone: "review", word: "Waiting for payer.", reason: "The payer has not approved this payment in PayPal yet.", tag: "PAYER" };
-  }
-}
+import { simulateFor } from "@/components/guard/paypal-zone";
 
 const ATTEMPT: Record<Payment["attempts"][number]["status"], { tone: Tone; word: string }> = {
   in_flight: { tone: "neutral", word: "Confirming" },
-  completed: { tone: "allow", word: "Paid" },
+  completed: { tone: "neutral", word: "Capture confirmed" },
   pending: { tone: "review", word: "Pending" },
   declined: { tone: "block", word: "Declined" },
   failed: { tone: "block", word: "Failed" },
@@ -49,22 +29,70 @@ export default function PaymentPage() {
   const api = useApi();
   const pay = useQuery(`payment:${id}`, (a) => a.getPayment(id), { pollMs: API_MODE === "live" ? 1500 : undefined });
   const p = pay.data;
-  const req = useQuery(p ? `request:${p.purchase_request_id}` : null, (a) => a.getPurchaseRequest(p!.purchase_request_id));
+  const req = useQuery(p ? `request:${p.purchase_request_id}` : null, (a) => a.getPurchaseRequest(p!.purchase_request_id), { pollMs: API_MODE === "live" ? 1500 : undefined });
   const r = req.data;
   const [firstStatus, setFirstStatus] = useState<string | null>(null);
   if (p && firstStatus === null) setFirstStatus(p.status);
 
-  // Unknown outcomes are settled by reconciling with PayPal, never by guessing (§2.9).
+  const [reconcileError, setReconcileError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [reconcileKey, renewReconcile] = useIntentKey();
+  const [captureKey, renewCapture] = useIntentKey();
+  const [capturing, setCapturing] = useState(false);
+  const paymentId = p?.id;
+  const paymentStatus = p?.status;
+  const refreshPayment = pay.refetch;
+  const refreshRequest = req.refetch;
+  // A stable interval survives read polling and covers pending/unknown create/capture results.
   useEffect(() => {
-    if (p?.status !== "CAPTURING") return;
-    const t = setTimeout(() => void api.reconcilePayment(p.id).then(() => pay.refetch()).catch(() => {}), 5000);
-    return () => clearTimeout(t);
-  }, [p?.status, p?.id, api, pay]);
+    if (!paymentId || !["CAPTURING", "PENDING", "CREATING", "APPROVED"].includes(paymentStatus ?? "")) return;
+    let running = false;
+    let disposed = false;
+    const timer = setInterval(async () => {
+      if (running || document.visibilityState !== "visible") return;
+      running = true;
+      try {
+        await api.reconcilePayment(paymentId);
+        if (!disposed) { setReconcileError(null); await Promise.all([refreshPayment(), refreshRequest()]); }
+      } catch (error) { if (!disposed) setReconcileError(errorMessage(error)); }
+      finally { running = false; }
+    }, 5000);
+    return () => { disposed = true; clearInterval(timer); };
+  }, [api, paymentId, paymentStatus, refreshPayment, refreshRequest]);
+
+  const checkStatus = async () => {
+    if (!p) return;
+    setChecking(true);
+    setReconcileError(null);
+    try {
+      await api.reconcilePayment(p.id, { idempotencyKey: reconcileKey });
+      renewReconcile();
+      await Promise.all([pay.refetch(), req.refetch()]);
+    } catch (error) { setReconcileError(errorMessage(error)); }
+    finally { setChecking(false); }
+  };
+
+  const confirmPayment = async () => {
+    if (!p || !r || capturing) return;
+    setCapturing(true);
+    setReconcileError(null);
+    try {
+      await api.capturePayment(p.id, simulateFor(r, p), { idempotencyKey: captureKey });
+      renewCapture();
+    } catch (error) { setReconcileError(errorMessage(error)); }
+    finally {
+      await Promise.all([pay.refetch(), req.refetch()]);
+      setCapturing(false);
+    }
+  };
 
   if (pay.error && !p) return <div className="mx-auto max-w-[680px] py-8 gutter"><LoadError error={pay.error} retry={pay.refetch} /></div>;
+  if (req.error && !r) return <div className="mx-auto max-w-[680px] py-8 gutter"><LoadError error={req.error} retry={req.refetch} /></div>;
   if (!p || !r) return <DetailSkeleton />;
 
-  const o = outcome(p, r);
+  const o = paymentOutcome(p, r);
+  const verifiedPaid = isVerifiedPaid(p, r);
+  const uncertain = ["CAPTURING", "PENDING", "CREATING", "APPROVED"].includes(p.status) || (p.status === "COMPLETED" && !verifiedPaid);
   const mock = p.paypal.environment === "mock";
 
   return (
@@ -81,8 +109,10 @@ export default function PaymentPage() {
         <p className="t-amount-l">{formatMoney(p.amount)}</p>
       </header>
 
+      {!!(pay.error || req.error) && <StaleNotice retry={() => { void pay.refetch(); void req.refetch(); }} />}
       <VerdictMark key={p.status} tone={o.tone} word={o.word} reason={o.reason} tag={o.tag} animate={p.status !== firstStatus} />
-      {p.status === "CAPTURING" && <StatusLine>Confirming with PayPal</StatusLine>}
+      {uncertain && <div className="space-y-3"><StatusLine>{COPY.confirmingPayment}</StatusLine><Button onClick={checkStatus} loading={checking}>{COPY.refresh}</Button></div>}
+      {reconcileError && <Notice tone="review" title={COPY.returnUnconfirmed}>{reconcileError}</Notice>}
       {mock && p.status === "COMPLETED" && <Notice tone="review" title="Simulated result.">{COPY.mockCapture}</Notice>}
 
       <div className="space-y-4">
@@ -91,7 +121,8 @@ export default function PaymentPage() {
           {r.next_actions.includes("retry_payment") && (
             <ButtonLink variant="primary" href={`/requests/${r.id}/checkout`} iconRight="arrowRight">Try payment again</ButtonLink>
           )}
-          {r.next_actions.includes("resume_checkout") && (
+          {p.status === "APPROVED" && r.next_actions.includes("resume_checkout") && <Button variant="primary" loading={capturing} onClick={confirmPayment}>{COPY.confirmPayment}</Button>}
+          {p.status !== "APPROVED" && r.next_actions.includes("resume_checkout") && (
             <ButtonLink variant="primary" href={`/requests/${r.id}/checkout`} iconRight="arrowRight">Continue to PayPal</ButtonLink>
           )}
           <Link href={`/ledger?q=${encodeURIComponent(r.id)}`} className="t-small font-medium text-ink underline-offset-4 hover:underline">View in ledger</Link>
@@ -102,7 +133,7 @@ export default function PaymentPage() {
       <section aria-labelledby="attempts">
         <h2 id="attempts" className="t-label text-ink">Capture attempts</h2>
         {p.attempts.length === 0 ? (
-          <p className="mt-2 border-y border-rule py-3 t-small text-muted">No capture attempted yet.</p>
+          <p className="mt-2 border-y border-rule py-3 t-small text-muted">{COPY.noCapture}</p>
         ) : (
           <ol className="mt-2 border-t border-rule">
             {p.attempts.map((a) => (

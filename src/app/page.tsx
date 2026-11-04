@@ -3,7 +3,7 @@ import { ButtonLink, StatusLabel } from "@/components/ui/primitives";
 import { EnvTag, Wordmark } from "@/components/shell/top-bar";
 import { HeroTrace } from "@/components/landing/hero-trace";
 import { PacificClock } from "@/components/landing/clock";
-import type { Tone } from "@/lib/copy";
+import { COPY, type Tone } from "@/lib/copy";
 
 const PRINCIPLES = [
   { n: "01", title: "Policy", kind: "deterministic", body: "Eight rules decide what an agent may buy. Same input, same answer, every time." },
@@ -54,10 +54,10 @@ export default function Landing() {
           <div className="min-w-0 lg:sticky lg:top-10 lg:col-span-6 lg:self-start lg:pt-6">
             <p className="t-label text-muted">Payment control for AI agents</p>
             <h1 className="mt-5 t-display-xl text-balance">
-              Give AI agents spending power. <em className="font-display italic text-ink-2">Keep humans in control.</em>
+              {COPY.landingHeadline[0]}<br />{COPY.landingHeadline[1]}
             </h1>
             <p className="mt-6 max-w-[34ch] text-[18px] leading-[28px] text-ink-2 text-pretty">
-              Policies decide. AI advises. PayPal moves money only after two approvals: the rules&apos; and a person&apos;s.
+              {COPY.landingSubline}
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
               <ButtonLink href="/requests" variant="primary" size="lg" iconRight="arrowRight">Open the workspace</ButtonLink>
@@ -89,7 +89,7 @@ export default function Landing() {
         <section id="scenarios" aria-labelledby="scenarios-title" className="mx-auto max-w-[1200px] py-20 gutter lg:py-24">
           <div className="grid gap-10 lg:grid-cols-12">
             <div className="lg:col-span-4">
-              <h2 id="scenarios-title" className="t-display-m">Five questions,<br />answered live.</h2>
+              <h2 id="scenarios-title" className="t-display-m">{COPY.demoHeading[0]}<br />{COPY.demoHeading[1]}</h2>
               <p className="mt-3 max-w-[32ch] t-body text-ink-2">Each scenario runs through the same agent API in the workspace.</p>
             </div>
             <ol className="border-t border-rule lg:col-span-8">
@@ -124,7 +124,7 @@ export default function Landing() {
                   </li>
                 ))}
               </ol>
-              <p className="mt-3 t-data text-muted">hash 9c1e…a07 ← 51b2…ee4 · chain verified</p>
+              <p className="mt-3 t-small text-muted">{COPY.ledgerSample}</p>
             </div>
           </div>
         </section>

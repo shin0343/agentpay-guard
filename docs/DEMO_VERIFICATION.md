@@ -9,7 +9,7 @@
 | Fixture risk | Exact fictional scenario matching, labelled `fixture` | Deterministic simulation; requires explicit demo mode |
 | PostgreSQL | Persistent requests/payments/evaluations and append-only audit | Real PostgreSQL integration tests, fresh connections and concurrency |
 | PayPal | Sandbox Orders v2 adapter and verified reconciliation | FakePayPal lifecycle tests and stub HTTP adapter tests; no genuine Sandbox transaction completed here |
-| Frontend | Existing GuardApi and design | Desktop/mobile scenario walkthroughs in labelled mock mode |
+| Frontend | Real GuardApi HTTP integration, recovery and refined Ledger Instrument UI | Real Next/PostgreSQL decision flows plus explicitly intercepted payment boundaries and labelled mock walkthroughs; see `FRONTEND_QA.md` |
 
 The app contains real AI integration code. This session does **not** claim a completed
 live inference or genuine PayPal Sandbox payment. No API credential or signed-in payer

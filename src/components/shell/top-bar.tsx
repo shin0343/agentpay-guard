@@ -9,6 +9,7 @@ import { useApi, useQuery } from "@/lib/hooks";
 import { Icon } from "@/components/ui/icon";
 import { Button, cx } from "@/components/ui/primitives";
 import { ScenarioSheet } from "./scenario-sheet";
+import { errorMessage } from "@/components/guard/request-parts";
 
 export function Wordmark({ className }: { className?: string }) {
   return (
@@ -57,7 +58,7 @@ export function TopBar({ session }: { session: Session }) {
               <Button size="sm" variant="secondary" icon="send" onClick={() => setSheet(true)}>Send test request</Button>
             </span>
             <span className="sm:hidden">
-              <Button size="sm" variant="secondary" icon="send" onClick={() => setSheet(true)} aria-label="Send test request" className="w-8 px-0">{null}</Button>
+              <Button size="sm" variant="secondary" icon="send" onClick={() => setSheet(true)} aria-label="Send test request" className="w-11 px-0">{null}</Button>
             </span>
             <UserMenu session={session} />
           </div>
@@ -102,6 +103,8 @@ function UserMenu({ session }: { session: Session }) {
   const api = useApi();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -118,8 +121,11 @@ function UserMenu({ session }: { session: Session }) {
   }, [open]);
 
   const signOut = async () => {
-    await api.signOut();
-    router.push("/login");
+    setBusy(true);
+    setError(null);
+    try { await api.signOut(); router.push("/login"); }
+    catch (error) { setError(errorMessage(error)); }
+    finally { setBusy(false); }
   };
   const switchRole = async () => {
     await api.signIn(session.user.role === "reviewer" ? "operator" : "reviewer");
@@ -135,7 +141,7 @@ function UserMenu({ session }: { session: Session }) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex h-8 items-center gap-2 rounded-md px-1.5 transition-colors duration-(--t-fast) hover:bg-sunken"
+        className="inline-flex h-11 items-center gap-2 rounded-md px-1.5 transition-colors duration-(--t-fast) hover:bg-sunken"
       >
         <span className="inline-flex size-6 items-center justify-center rounded-full border border-rule-strong t-data text-[11px]!">{initials}</span>
         <span className="hidden t-small text-ink-2 lg:inline">{session.user.name}</span>
@@ -152,7 +158,8 @@ function UserMenu({ session }: { session: Session }) {
               Switch to {session.user.role === "reviewer" ? "operator" : "reviewer"} (mock)
             </button>
           )}
-          <button role="menuitem" type="button" onClick={signOut} className="block w-full px-4 py-2.5 text-left t-small hover:bg-sunken">Sign out</button>
+          <button role="menuitem" type="button" disabled={busy} onClick={signOut} className="block w-full px-4 py-2.5 text-left t-small hover:bg-sunken">Sign out{busy ? "…" : ""}</button>
+          {error && <p role="alert" className="px-4 py-2 t-small text-block">{error}</p>}
         </div>
       )}
     </div>

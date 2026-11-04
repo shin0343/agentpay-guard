@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import type { ScenarioKey } from "@/contract";
 import { SCENARIOS } from "@/contract/fixtures/scenarios";
-import { useApi } from "@/lib/hooks";
+import { useApi, useIntentKey } from "@/lib/hooks";
+import { API_MODE } from "@/lib/api";
+import { COPY } from "@/lib/copy";
 import { Button, Dialog, Label, cx } from "@/components/ui/primitives";
 import { errorMessage } from "@/components/guard/request-parts";
 
@@ -16,6 +18,7 @@ export function ScenarioSheet({ open, onClose }: { open: boolean; onClose: () =>
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
+  const [intentKey, renewIntent] = useIntentKey();
   const groupId = useId();
   const def = SCENARIOS.find((s) => s.key === key)!;
 
@@ -23,7 +26,8 @@ export function ScenarioSheet({ open, onClose }: { open: boolean; onClose: () =>
     setBusy(true);
     setError(null);
     try {
-      const res = await api.runScenario(key);
+      const res = await api.runScenario(key, { idempotencyKey: intentKey });
+      renewIntent();
       onClose();
       router.push(`/requests/${res.purchase_request.id}${res.replayed ? "?replayed=1" : ""}`);
     } catch (e) {
@@ -51,14 +55,14 @@ export function ScenarioSheet({ open, onClose }: { open: boolean; onClose: () =>
       <div className="flex items-start justify-between gap-4 border-b border-rule px-6 py-5">
         <div>
           <h2 id={`${groupId}-title`} className="t-display-m">Send test request</h2>
-          <p className="mt-1 t-small text-ink-2">Sent as the demo agent, through the agent API path.</p>
+          <p className="mt-1 t-small text-ink-2">{API_MODE === "mock" ? COPY.mockBanner : COPY.demoScenario}</p>
         </div>
         <Button variant="quiet" size="sm" onClick={onClose} aria-label="Close" icon="x">{""}</Button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-5">
         <fieldset>
-          <legend className="t-label text-muted">Scenario</legend>
+          <legend id={groupId} className="t-label text-muted">Scenario</legend>
           <div className="mt-2 border-t border-rule" role="radiogroup" aria-labelledby={groupId}>
             {SCENARIOS.map((s) => (
               <label
@@ -73,7 +77,8 @@ export function ScenarioSheet({ open, onClose }: { open: boolean; onClose: () =>
                   name="scenario"
                   value={s.key}
                   checked={key === s.key}
-                  onChange={() => setKey(s.key)}
+                  onChange={() => { setKey(s.key); renewIntent(); setError(null); }}
+                  disabled={busy || resetting}
                   className="mt-1 ml-2 accent-(--ink)"
                 />
                 <span className="t-data w-5 text-muted">{s.letter}</span>
@@ -98,11 +103,12 @@ export function ScenarioSheet({ open, onClose }: { open: boolean; onClose: () =>
           )}
         </div>
         {error && <p className="mt-4 t-small text-block" role="alert">{error}</p>}
+        <p className="mt-4 t-small text-muted">{API_MODE === "mock" ? COPY.demoResetMock : COPY.demoResetLive}</p>
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t border-rule px-6 py-4">
-        <Button variant="quiet" size="sm" icon="reset" loading={resetting} onClick={reset}>Reset demo</Button>
-        <Button variant="primary" icon="send" loading={busy} onClick={send}>Send as agent</Button>
+        <Button variant="quiet" size="sm" icon="reset" loading={resetting} disabled={busy} onClick={reset}>Reset demo</Button>
+        <Button variant="primary" icon="send" loading={busy} disabled={resetting} onClick={send}>Send as agent</Button>
       </div>
     </Dialog>
   );

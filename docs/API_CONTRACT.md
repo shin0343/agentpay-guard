@@ -590,6 +590,11 @@ Capture: `POST /v2/checkout/orders/{id}/capture` with `PayPal-Request-Id: cap_<p
 
 ### 8.1 Backend security clarifications (2026-11-03, before implementation)
 
+Frontend integration clarification (2026-11-04): the existing optional
+`POST /payments/{id}/payer-cancel` endpoint accepts `{}`, requires operator cookie,
+CSRF and Idempotency-Key, and returns `{ "ok": true }`. It records popup/redirect
+closure in the ledger; it does not cancel the purchase or prove a payment outcome.
+
 No response shapes or existing UI calls change. POST schemas now reject unknown fields, including nested money/merchant/items; metadata is limited to ten keys. Reject notes need three non-whitespace characters. Before deployment run the SQL migrations.
 
 - Server catalog `src/server/policy/catalog.ts` resolves known fixture item names (or SKUs), canonical merchant identity/category/domain and unit prices. Forged known catalog prices/merchants are rejected with `VALIDATION_FAILED`. Unknown proposals remain persistable and require review; checkout fails closed until a trusted server catalog entry exists. Human review cannot validate an arbitrary client price. Catalog edits are deployment-controlled.

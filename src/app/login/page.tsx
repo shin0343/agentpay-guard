@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { API_MODE } from "@/lib/api";
+import { COPY } from "@/lib/copy";
 import { useApi } from "@/lib/hooks";
 import { Button, TextInput } from "@/components/ui/primitives";
 import { EnvTag, Wordmark } from "@/components/shell/top-bar";
@@ -23,7 +24,7 @@ function LoginForm() {
     setError(null);
     try {
       await api.signIn(passcode);
-      router.replace(next.startsWith("/") ? next : "/requests");
+      router.replace(next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : "/requests");
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);
@@ -42,7 +43,7 @@ function LoginForm() {
         <Button variant="primary" type="submit" loading={busy} className="w-full">Sign in</Button>
       </form>
       <p className="mt-6 t-small text-muted">
-        {API_MODE === "mock" ? <>Mock passcodes: <span className="font-mono text-ink-2">reviewer</span> or <span className="font-mono text-ink-2">operator</span>.</> : "Demo passcodes are in the README."}
+        {API_MODE === "mock" ? <>Mock passcodes: <span className="font-mono text-ink-2">reviewer</span> or <span className="font-mono text-ink-2">operator</span>.</> : COPY.livePasscode}
       </p>
     </main>
   );

@@ -1,12 +1,12 @@
 /**
  * Adapter selection. `NEXT_PUBLIC_API_MODE=live` switches every screen to the real backend.
- * Default is `mock` so the frontend runs standalone.
+ * Live is the default. Offline demonstration requires an explicit `mock` build.
  */
 import { createHttpAdapter } from "./http/http-adapter";
 import { createMockAdapter } from "./mock/mock-adapter";
 import type { ApiMode, GuardApi } from "./types";
 
-export const API_MODE: ApiMode = process.env.NEXT_PUBLIC_API_MODE === "live" ? "live" : "mock";
+export const API_MODE: ApiMode = process.env.NEXT_PUBLIC_API_MODE === "mock" ? "mock" : "live";
 
 let instance: GuardApi | null = null;
 

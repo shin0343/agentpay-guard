@@ -1,0 +1,21 @@
+# Frontend evidence · 2026-11-04
+
+These images have different evidence categories. **None proves a genuine PayPal
+Sandbox payment or OpenAI inference.** Real-backend views use PostgreSQL and
+explicit fixture AI. Fixture payment screens say so on the image. Mock screens
+keep the persistent mock banner. Full generated runs remain locally in `qa/`.
+
+| Image | Evidence |
+|---|---|
+| [Landing](landing-mock-desktop.png) | Explicit offline demonstration; local fictional hero |
+| [Allowed request](allowed-live-desktop.png) | Actual Next API/PostgreSQL request; fixture AI; payer key waiting |
+| [Review, mobile](review-live-mobile.png) | Actual returned amount/merchant/thresholds; policy approval is separate from payment |
+| [Ledger, mobile](ledger-live-mobile.png) | Persisted real-backend audit events, readable labels and request links |
+| [Checkout recovery](checkout-unavailable-fixture-desktop.png) | Intercepted SDK failure; reload and redirect recovery, no real payment |
+| [Unconfirmed capture](payment-unconfirmed-fixture-desktop.png) | Intercepted unknown outcome; no Paid label or new-payment retry |
+| [Declined payment](payment-declined-mock-mobile.png) | Explicitly simulated decline and retry action |
+| [Dark / reduced motion](request-dark-fixture-desktop.png) | Intercepted representative request state; no real payment |
+| [Before: generic review](before-review-live-mobile.png) | Actual initial live messages repeated “Human review required”; compare returned evidence in final review |
+
+Desktop: 1440×900. Mobile: 390×844 (mock DPR 2). Additional 375/768/1280 layouts
+were verified. See [FRONTEND_QA.md](../FRONTEND_QA.md) for scope and limitations.

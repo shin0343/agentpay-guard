@@ -65,14 +65,14 @@ function GroupHead({ n, title, kind, right }: { n: string; title: string; kind: 
 }
 
 function RiskBlock({ risk, animate, baseDelay, compact }: { risk: RiskAssessment; animate: boolean; baseDelay: number; compact?: boolean }) {
-  const style = (i: number) => (animate ? { animationDelay: `${baseDelay + i * STAGGER}ms` } : undefined);
+  const style = (i: number) => (animate ? { animationDelay: `${Math.min(880, baseDelay + i * STAGGER)}ms` } : undefined);
   const cls = animate ? "motion-resolve" : "";
 
   if (risk.status !== "completed") {
     return (
       <div className={cx("px-4 pb-4 sm:px-5", cls)} style={style(0)}>
         <p className="t-small text-ink-2">
-          {risk.status === "skipped" ? risk.summary ?? "Skipped." : "Risk could not be assessed. The request goes to a person."}
+          {risk.status === "skipped" ? risk.summary ?? "Skipped." : COPY.riskUnavailable}
         </p>
       </div>
     );
@@ -103,7 +103,9 @@ function RiskBlock({ risk, animate, baseDelay, compact }: { risk: RiskAssessment
       )}
       {!compact && (
         <p className={cx("mt-3 t-data text-muted", cls)} style={style(risk.signals.length + 1)}>
+          {["fixture", "mock-fixture"].includes(risk.model ?? "") && <span className="mb-1 block t-small font-medium text-ink-2">{COPY.fixtureRisk}</span>}
           model {risk.model} · prompt {risk.prompt_version}{risk.latency_ms ? ` · ${(risk.latency_ms / 1000).toFixed(1)}s` : ""}
+          <span className="mt-1 block t-small">{COPY.advisoryRisk}</span>
         </p>
       )}
       {compact && risk.signals.length === 0 && risk.summary && <p className={cx("t-small text-ink-2", cls)} style={style(0)}>{risk.summary}</p>}
@@ -121,8 +123,8 @@ export function DecisionTrace({ evaluation, decision, evaluating, animate = fals
   const titleId = useId();
   const counts = evaluation?.policy.reduce<Record<RuleOutcome, number>>((acc, p) => ((acc[p.outcome] += 1), acc), { pass: 0, review: 0, block: 0, skipped: 0 });
   const policyCount = evaluation?.policy.length ?? 8;
-  const riskDelay = policyCount * STAGGER + 120;
-  const verdictDelay = riskDelay + ((evaluation?.risk.signals.length ?? 0) + 2) * STAGGER;
+  const riskDelay = Math.min(880, policyCount * STAGGER + 120);
+  const verdictDelay = Math.min(880, riskDelay + ((evaluation?.risk.signals.length ?? 0) + 2) * STAGGER);
   const rowStyle = (i: number) => (animate ? { animationDelay: `${i * STAGGER}ms` } : undefined);
   const pad = compact ? "py-2" : "py-2.5";
 
@@ -177,7 +179,7 @@ export function DecisionTrace({ evaluation, decision, evaluating, animate = fals
                 </th>
                 <td className={cx("pr-3", pad)}>
                   <span className="t-data text-ink">{p.rule_key}</span>
-                  {!compact && <span className="block t-small text-ink-2 md:hidden">{p.message}</span>}
+                  {!compact && <span className="mt-1 block t-small text-ink-2 md:hidden">{p.observed}{p.limit ? ` · ${p.limit}` : ` · ${p.message}`}</span>}
                 </td>
                 <td className={cx("hidden pr-3 md:table-cell", pad)}>
                   <span className="t-data text-ink-2" title={p.limit ?? undefined}>{p.observed}</span>

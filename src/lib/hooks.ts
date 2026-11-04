@@ -24,25 +24,26 @@ export function useQuery<T>(key: string | null, fn: (api: GuardApi) => Promise<T
   useEffect(() => {
     fnRef.current = fn;
   });
-  const [data, setData] = useState<T | undefined>(undefined);
-  const [error, setError] = useState<unknown>(null);
-  const [loading, setLoading] = useState<boolean>(key !== null);
+  const [result, setResult] = useState<{ key: string | null; data?: T; error: unknown }>({ key: null, error: null });
   const seq = useRef(0);
+  const inFlight = useRef<{ key: string; promise: Promise<void> } | null>(null);
 
   const refetch = useCallback(async () => {
     if (key === null) return;
+    if (inFlight.current?.key === key) return inFlight.current.promise;
     const mine = ++seq.current;
-    try {
-      const next = await fnRef.current(getApi());
-      if (mine !== seq.current) return;
-      setData(next);
-      setError(null);
-    } catch (e) {
-      if (mine !== seq.current) return;
-      setError(e);
-    } finally {
-      if (mine === seq.current) setLoading(false);
-    }
+    const promise = (async () => {
+      try {
+        const next = await fnRef.current(getApi());
+        if (mine === seq.current) setResult({ key, data: next, error: null });
+      } catch (error) {
+        if (mine === seq.current) setResult((previous) => ({ key, data: previous.key === key ? previous.data : undefined, error }));
+      } finally {
+        if (mine === seq.current) inFlight.current = null;
+      }
+    })();
+    inFlight.current = { key, promise };
+    return promise;
   }, [key]);
 
   useEffect(() => {
@@ -50,7 +51,13 @@ export function useQuery<T>(key: string | null, fn: (api: GuardApi) => Promise<T
     // Initial fetch for this key; state updates happen asynchronously after the await.
     void refetch();
     const unsub = getApi().subscribe(() => void refetch());
-    return unsub;
+    return () => {
+      unsub();
+      // This is a request generation counter, not a DOM ref. Invalidate late responses on navigation.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      ++seq.current;
+      inFlight.current = null;
+    };
   }, [key, refetch]);
 
   useEffect(() => {
@@ -61,7 +68,15 @@ export function useQuery<T>(key: string | null, fn: (api: GuardApi) => Promise<T
     return () => clearInterval(t);
   }, [key, opts.pollMs, refetch]);
 
-  return { data, error, loading: loading && data === undefined, refetch };
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === "visible") void refetch(); };
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.removeEventListener("online", refresh); document.removeEventListener("visibilitychange", refresh); };
+  }, [refetch]);
+
+  const current = result.key === key;
+  return { data: current ? result.data : undefined, error: current ? result.error : null, loading: key !== null && !current, refetch };
 }
 
 /** Ticks every `ms` — for countdowns and relative times. */
@@ -103,4 +118,28 @@ export function useHotkeys(map: Record<string, (e: KeyboardEvent) => void>, enab
 export function useIntentKey(): [string, () => void] {
   const [key, setKey] = useState(() => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Math.random())));
   return [key, () => setKey(crypto.randomUUID())];
+}
+
+/** Cursor pagination stays inside GuardApi; a refreshed first page wins over older rows. */
+export function useLoadMore<T extends { id: string }>(key: string, first: { data: T[]; next_cursor: string | null } | undefined, fetchPage: (cursor: string) => Promise<{ data: T[]; next_cursor: string | null }>) {
+  const [extra, setExtra] = useState<{ key: string; data: T[]; next_cursor: string | null } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const current = extra?.key === key ? extra : null;
+  const cursor = current ? current.next_cursor : first?.next_cursor;
+  const rows = [...new Map([...(current?.data ?? []), ...(first?.data ?? [])].map((row) => [row.id, row])).values()];
+  // Preserve API order (newest first), with refreshed records replacing stale copies.
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const ordered = [...new Set([...(first?.data ?? []), ...(current?.data ?? [])].map((row) => row.id))].map((id) => byId.get(id)!);
+  const loadMore = async () => {
+    if (!cursor || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const page = await fetchPage(cursor);
+      setExtra((previous) => ({ key, data: [...(previous?.key === key ? previous.data : []), ...page.data], next_cursor: page.next_cursor }));
+    } catch (error) { setError(error); }
+    finally { setBusy(false); }
+  };
+  return { rows: ordered, hasMore: !!cursor, loadMore, busy, error };
 }

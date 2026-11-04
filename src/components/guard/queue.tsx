@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useDeferredValue, useRef, useState } from "react";
 import type { RequestStatus } from "@/contract";
+import { COPY } from "@/lib/copy";
 import { API_MODE } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
-import { useHotkeys, useNow, useQuery } from "@/lib/hooks";
-import { Skeleton, SearchField, cx } from "@/components/ui/primitives";
-import { EmptyState, LoadError, QueueRow } from "./request-parts";
+import { useApi, useHotkeys, useLoadMore, useNow, useQuery } from "@/lib/hooks";
+import { Button, Skeleton, SearchField, cx } from "@/components/ui/primitives";
+import { EmptyState, LoadError, QueueRow, StaleNotice } from "./request-parts";
 
 const FILTERS: { key: string; label: string; status?: RequestStatus[] }[] = [
   { key: "all", label: "All" },
@@ -23,6 +24,7 @@ export function RequestQueue({ selectedId, basePath = "/requests", fixedStatus, 
   selectedId?: string; basePath?: string; fixedStatus?: RequestStatus[]; title?: string;
 }) {
   const router = useRouter();
+  const api = useApi();
   const [filter, setFilter] = useState("all");
   const [q, setQ] = useState("");
   const query = useDeferredValue(q);
@@ -36,7 +38,8 @@ export function RequestQueue({ selectedId, basePath = "/requests", fixedStatus, 
     (api) => api.listPurchaseRequests({ status, q: query || undefined, limit: 100 }),
     { pollMs: API_MODE === "live" ? 3000 : undefined },
   );
-  const rows = list.data?.data ?? [];
+  const pages = useLoadMore(`queue:${status?.join(",") ?? "all"}:${query}`, list.data, (cursor) => api.listPurchaseRequests({ status, q: query || undefined, limit: 100, cursor }));
+  const rows = pages.rows;
   const idx = rows.findIndex((r) => r.id === selectedId);
 
   const go = (i: number) => {
@@ -72,7 +75,7 @@ export function RequestQueue({ selectedId, basePath = "/requests", fixedStatus, 
                 aria-pressed={filter === f.key}
                 onClick={() => setFilter(f.key)}
                 className={cx(
-                  "h-7 rounded-sm px-1.5 t-small font-medium transition-colors duration-(--t-fast)",
+                  "min-h-10 rounded-sm px-1.5 t-small font-medium transition-colors duration-(--t-fast)",
                   filter === f.key ? "bg-ink text-on-ink" : "text-ink-2 hover:bg-sunken",
                 )}
               >
@@ -84,7 +87,8 @@ export function RequestQueue({ selectedId, basePath = "/requests", fixedStatus, 
       </div>
 
       <div className="min-h-0 flex-1 lg:overflow-y-auto">
-        {list.error && !list.data ? (
+        {!!list.error && list.data && <div className="p-4"><StaleNotice retry={list.refetch} /></div>}
+        {!!list.error && !list.data ? (
           <div className="p-4"><LoadError error={list.error} retry={list.refetch} /></div>
         ) : list.loading ? (
           <div aria-busy="true">
@@ -111,6 +115,8 @@ export function RequestQueue({ selectedId, basePath = "/requests", fixedStatus, 
             ))}
           </ul>
         )}
+        {pages.hasMore && <div className="p-4"><Button className="w-full" onClick={pages.loadMore} loading={pages.busy}>{COPY.loadRequests}</Button></div>}
+        {!!pages.error && <div className="p-4"><LoadError error={pages.error} retry={pages.loadMore} /></div>}
       </div>
     </div>
   );

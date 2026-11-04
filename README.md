@@ -4,15 +4,15 @@
 
 A payment control layer for AI agents, built for the PayPal AI Hackathon 2026. An agent proposes a purchase. Deterministic policies decide, an AI risk model advises (and can only add caution), a human reviews when needed, and PayPal moves money only after a second, separate payer approval. Every step is written to a hash-chained ledger.
 
-**Status:** frontend mock mode is preserved. The backend now implements PostgreSQL persistence, deterministic policies, server authorization, idempotency, audit chaining and a real PayPal Sandbox Orders v2 adapter. Automated tests use a fake payment provider. A real OpenAI structured-output risk service is integrated with conservative failure handling. No live AI inference or real Sandbox payment was completed in this session; automated provider tests use stub transports.
+**Status:** frontend uses the real backend by default; explicit offline mock mode is preserved. The backend now implements PostgreSQL persistence, deterministic policies, server authorization, idempotency, audit chaining and a real PayPal Sandbox Orders v2 adapter. Automated tests use a fake payment provider. A real OpenAI structured-output risk service is integrated with conservative failure handling. No live AI inference or real Sandbox payment was completed in this session; automated provider tests use stub transports.
 
 ```bash
 pnpm install
-pnpm dev          # http://localhost:3000
+pnpm dev          # real backend at http://localhost:3000; configure .env.local first
 pnpm check        # typecheck, lint, tests, build
 ```
 
-Mock passcodes: `reviewer` / `operator`. Use **Send test request** in the workspace to run demo scenarios A–E.
+For an offline demonstration: `NEXT_PUBLIC_API_MODE=mock pnpm dev` (or build with that variable). Mock-only passcodes: `reviewer` / `operator`. Use **Send test request** in the workspace to run explicitly labelled scenarios A–E.
 
 | Doc | What |
 |---|---|
@@ -22,7 +22,8 @@ Mock passcodes: `reviewer` / `operator`. Use **Send test request** in the worksp
 | `docs/UX_BLUEPRINT.md` | Screens, hierarchy, primary actions |
 | `docs/API_CONTRACT.md` · `docs/PAYMENT_STATE_MACHINE.md` | Frozen v1 contract and state machines |
 | `docs/DEMO_SCENARIOS.md` | Fictional demo data and the 3-minute script |
-| `docs/FRONTEND_HANDOFF.md` | How to connect the real backend without touching the UI |
+| `docs/FRONTEND_HANDOFF.md` | Live integration boundary, modes and recovery |
+| `docs/FRONTEND_QA.md` · `docs/UX_CHANGELOG.md` | Verified frontend behavior, screenshots and remaining issues |
 
 All people, companies and merchants in the demo are fictional.
 

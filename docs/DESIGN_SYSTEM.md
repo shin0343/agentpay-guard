@@ -345,7 +345,7 @@ No horizontal page scroll at any width. Wide tables scroll inside their own cont
 
 Layout decisions made during visual QA (keep them):
 - Workspace queue pane is **392px** (fits all six filter chips on one line). Detail measure stays ≤ 880px.
-- Trace rows are **single-line**. The `limit` gets its own column at ≥ 1280px and is a tooltip below that. On < 768px each row shows its one-line `message` instead of observed/limit (except the compact hero).
+- Trace rows are **single-line** on desktop. The `limit` gets its own column at ≥ 1280px and is a tooltip below that. On < 768px each row shows returned observed/limit evidence beneath the rule key (except the compact hero). Clarified 2026-11-04: actual backend messages can be generic, so retaining the observed value and policy threshold is necessary to explain a review or block. No policy outcome is recomputed in the UI.
 - The landing hero's text column is `sticky` beside the taller trace panel. Do not pad the text column with filler to "balance" it.
 - Responsive display toggles go on a **wrapper element**, never on a `Button`/`ButtonLink` itself (`hidden` loses to the component's own `inline-flex`; this caused a 500px-wide mobile page).
 - Every grid that holds the trace or tables needs `grid-cols-1`/`minmax(0,1fr)` + `min-w-0` on its children.

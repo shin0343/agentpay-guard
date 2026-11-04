@@ -92,6 +92,7 @@ export function createMockAdapter(): GuardApi {
       return res;
     },
     reconcilePayment: (id) => op(() => engine.reconcile(id, role()), true),
+    recordPayerCancel: (id) => op(() => { engine.payerClose(id); }, true),
     getCheckoutConfig: () => op(() => ({ paypal_client_id: "mock", currency: "USD" as const, intent: "capture" as const })),
 
     listAuditEvents: (params = {}) => op(() => engine.listAudit(params)),

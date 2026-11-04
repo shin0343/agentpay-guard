@@ -49,7 +49,7 @@ export function HeroTrace() {
   };
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
-  const verdictDelay = phase === "done" ? (r.evaluation!.policy.length + r.evaluation!.risk.signals.length + 3) * 90 : 0;
+  const verdictDelay = phase === "done" ? Math.min(880, (r.evaluation!.policy.length + r.evaluation!.risk.signals.length + 3) * 90) : 0;
 
   return (
     <div className="rounded-lg border border-rule bg-raised">

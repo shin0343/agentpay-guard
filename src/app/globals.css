@@ -264,3 +264,16 @@ dialog::backdrop {
 dialog[open].apg-sheet {
   animation: apg-sheet var(--t-base) var(--ease-out) both;
 }
+
+/* Keep the next request action reachable on touch screens without hiding evidence. */
+@media (max-width: 639px) {
+  .decision-actions:not(:empty) {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 20;
+    padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--rule);
+    background: var(--paper);
+  }
+  button, a[href], select { min-height: 44px; }
+}

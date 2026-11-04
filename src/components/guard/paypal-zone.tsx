@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Payment, PurchaseRequest } from "@/contract";
-import { API_MODE } from "@/lib/api";
+import { API_MODE, isApiError } from "@/lib/api";
 import { COPY } from "@/lib/copy";
 import { formatMoney } from "@/lib/format";
 import { useApi, useIntentKey } from "@/lib/hooks";
@@ -39,7 +39,7 @@ function MockPayer({ request }: { request: PurchaseRequest }) {
   const [closed, setClosed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkoutKey, renewCheckout] = useIntentKey();
-  const [captureKey] = useIntentKey();
+  const [captureKey, renewCapture] = useIntentKey();
 
   const open = async () => {
     setPhase("opening");
@@ -63,6 +63,7 @@ function MockPayer({ request }: { request: PurchaseRequest }) {
     try {
       const approved = await api.mockPayer.approve(payment.id);
       await api.capturePayment(approved.id, simulateFor(request, approved), { idempotencyKey: captureKey });
+      renewCapture();
       router.push(`/payments/${approved.id}`);
     } catch (e) {
       setError(errorMessage(e));
@@ -114,7 +115,7 @@ interface PayPalNamespace {
   Buttons: (opts: {
     style?: Record<string, unknown>;
     createOrder: () => Promise<string>;
-    onApprove: (data: { orderID: string }) => Promise<void>;
+    onApprove: (data: { orderID: string }, actions: { restart: () => Promise<void> }) => Promise<void>;
     onCancel?: () => void;
     onError?: (err: unknown) => void;
   }) => PayPalButtonsInstance;
@@ -123,82 +124,141 @@ declare global {
   interface Window { paypal?: PayPalNamespace }
 }
 
+let sdkPromise: Promise<PayPalNamespace> | null = null;
 function loadSdk(clientId: string): Promise<PayPalNamespace> {
   if (window.paypal) return Promise.resolve(window.paypal);
-  return new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture&components=buttons`;
-    s.async = true;
-    s.onload = () => (window.paypal ? resolve(window.paypal) : reject(new Error("PayPal SDK unavailable")));
-    s.onerror = () => reject(new Error("PayPal SDK failed to load"));
-    document.head.appendChild(s);
+  if (sdkPromise) return sdkPromise;
+  sdkPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    const timer = setTimeout(() => fail(), 15_000);
+    const fail = () => {
+      clearTimeout(timer);
+      script.remove();
+      sdkPromise = null;
+      reject(new Error(COPY.checkoutUnavailable));
+    };
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture&components=buttons`;
+    script.async = true;
+    script.onload = () => {
+      clearTimeout(timer);
+      if (window.paypal) resolve(window.paypal);
+      else fail();
+    };
+    script.onerror = fail;
+    document.head.appendChild(script);
   });
+  return sdkPromise;
 }
 
 function LivePayPalButtons({ request }: { request: PurchaseRequest }) {
   const api = useApi();
   const router = useRouter();
   const container = useRef<HTMLDivElement>(null);
+  const latestRequest = useRef(request);
   const paymentRef = useRef<Payment | null>(null);
+  const checkoutKey = useRef<string | null>(null);
+  const [reload, setReload] = useState(0);
   const [status, setStatus] = useState<"loading" | "ready" | "capturing" | "error">("loading");
   const [message, setMessage] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
   const [fallback, setFallback] = useState<string | null>(null);
+  useEffect(() => { latestRequest.current = request; }, [request]);
 
   useEffect(() => {
-    let cancelled = false;
+    let disposed = false;
     let buttons: PayPalButtonsInstance | null = null;
+    const captureKeys = new Map<string, string>();
     (async () => {
+      setStatus("loading");
+      setMessage(null);
       try {
         const cfg = await api.getCheckoutConfig();
+        if (disposed) return;
         const paypal = await loadSdk(cfg.paypal_client_id);
-        if (cancelled || !container.current) return;
+        if (disposed || !container.current) return;
         buttons = paypal.Buttons({
           style: { layout: "vertical", label: "paypal" },
           createOrder: async () => {
             setMessage(null);
-            const res = await api.startCheckout(request.id);
+            checkoutKey.current ??= crypto.randomUUID();
+            const res = await api.startCheckout(request.id, { idempotencyKey: checkoutKey.current });
             paymentRef.current = res.payment;
+            checkoutKey.current = null;
             setFallback(res.payment.paypal.payer_action_url);
-            if (!res.payment.paypal.order_id) throw new Error("No PayPal order was created.");
+            if (!res.payment.paypal.order_id) {
+              router.push(`/payments/${res.payment.id}`);
+              throw new Error(COPY.returnUnconfirmed);
+            }
             return res.payment.paypal.order_id;
           },
-          onApprove: async () => {
-            const p = paymentRef.current;
-            if (!p) return;
+          onApprove: async (_data, actions) => {
+            const payment = paymentRef.current;
+            if (!payment || disposed) return;
             setStatus("capturing");
-            await api.capturePayment(p.id, simulateFor(request, p));
-            router.push(`/payments/${p.id}`);
+            const intent = `${payment.id}:${payment.attempts.length}`;
+            if (!captureKeys.has(intent)) captureKeys.set(intent, crypto.randomUUID());
+            try {
+              const result = await api.capturePayment(payment.id, simulateFor(latestRequest.current, payment), { idempotencyKey: captureKeys.get(intent) });
+              paymentRef.current = result.payment;
+              // PayPal's supported funding-decline recovery reopens payer approval on the same order.
+              if (result.payment.status === "DECLINED" && result.payment.failure?.paypal_issue === "INSTRUMENT_DECLINED") {
+                setStatus("ready");
+                setMessage(result.payment.failure.message);
+                await actions.restart();
+                return;
+              }
+            } catch {
+              // The server may have captured before the response was interrupted. Read this payment.
+            }
+            if (!disposed) router.push(`/payments/${payment.id}`);
           },
-          onCancel: () => setMessage("You closed PayPal. Nothing was charged."),
-          onError: (err) => {
-            setMessage(errorMessage(err));
+          onCancel: () => {
             setStatus("ready");
+            setMessage(COPY.payerClosed);
+            if (paymentRef.current) void api.recordPayerCancel(paymentRef.current.id).catch(() => {});
+          },
+          onError: () => {
+            if (!disposed) { setMessage(COPY.checkoutRecovery); setStatus("error"); }
           },
         });
         await buttons.render(container.current);
-        if (!cancelled) setStatus("ready");
-      } catch (e) {
-        if (!cancelled) {
-          setStatus("error");
-          setMessage(e instanceof Error ? e.message : errorMessage(e));
-        }
+        if (!disposed) setStatus("ready");
+      } catch (error) {
+        if (!disposed) { setStatus("error"); setMessage(isApiError(error) ? errorMessage(error) : COPY.checkoutRecovery); }
       }
     })();
-    return () => {
-      cancelled = true;
-      buttons?.close?.();
-    };
-  }, [api, request, router]);
+    return () => { disposed = true; buttons?.close?.(); };
+    // A refreshed request must never close an active payer popup.
+  }, [api, request.id, router, reload]);
+
+  const redirect = async () => {
+    setRedirecting(true);
+    setMessage(null);
+    try {
+      checkoutKey.current ??= crypto.randomUUID();
+      const res = await api.startCheckout(request.id, { idempotencyKey: checkoutKey.current });
+      paymentRef.current = res.payment;
+      checkoutKey.current = null;
+      const url = res.payment.paypal.payer_action_url;
+      if (url) window.location.assign(url);
+      else router.push(`/payments/${res.payment.id}`);
+    } catch (error) { setMessage(errorMessage(error)); setRedirecting(false); }
+  };
 
   return (
     <div>
       <p className="t-label text-muted">PayPal · Sandbox</p>
-      <div ref={container} className="mt-4 min-h-[48px] max-w-[420px]" />
-      {status === "loading" && <StatusLine>Loading PayPal</StatusLine>}
-      {status === "capturing" && <StatusLine>Payer approved · confirming with PayPal</StatusLine>}
-      {message && <p className="mt-3 t-small text-ink-2" role="status">{message}</p>}
-      {fallback && (
-        <a href={fallback} className="mt-3 inline-block t-small font-medium text-ink underline underline-offset-4">Popup blocked? Continue to PayPal ↗</a>
+      <div ref={container} className="mt-4 min-h-[48px] max-w-[420px]" aria-busy={status === "loading"} />
+      {status === "loading" && <StatusLine>{COPY.checkoutLoading}</StatusLine>}
+      {status === "capturing" && <StatusLine>{COPY.confirmingPayment}</StatusLine>}
+      {message && <div className="mt-3"><Notice tone={status === "error" ? "block" : "neutral"} title={status === "error" ? COPY.checkoutUnavailable : COPY.returnUnconfirmed}>{message}</Notice></div>}
+      {status === "error" && <Button className="mt-4" onClick={() => setReload((n) => n + 1)}>{COPY.retryCheckout}</Button>}
+      {status !== "capturing" && status !== "loading" && (
+        <div className="mt-4 border-t border-rule pt-4">
+          {fallback ? <a href={fallback} className="inline-flex min-h-10 items-center t-small font-medium text-ink underline underline-offset-4">{COPY.redirectCheckout}</a>
+            : <Button variant="quiet" loading={redirecting} onClick={redirect}>{COPY.redirectCheckout}</Button>}
+          <p className="t-small text-muted">{COPY.redirectHint}</p>
+        </div>
       )}
     </div>
   );
