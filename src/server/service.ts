@@ -1,4 +1,4 @@
-import { checkpoint } from "./idempotency/context";
+import { correlation, operation, checkpoint } from "./idempotency/context";
 import {
   PurchaseRequest,
   Payment,
@@ -15,6 +15,10 @@ import type {
 import { audit } from "./audit/ledger";
 import { transition, paymentTransition } from "./state/transitions";
 import { id, now, Fault, requireState } from "./util";
+import { riskContext } from "./risk/context";
+import { assessSafely } from "./risk/evaluate";
+import { unavailable, type RiskResult } from "./risk/safety";
+import { sanitize } from "./privacy";
 import { combine, evaluate, fingerprint, policyOutcome } from "./policy/engine";
 import { activePolicy, trustedQuote } from "./policy/catalog";
 import type { RiskAssessor } from "./risk/assessor";
@@ -166,6 +170,21 @@ export class GuardService {
           ) &&
           !!r.decision?.expires_at &&
           Date.parse(r.decision.expires_at) <= Date.now();
+    if (
+      r.status === "EVALUATING" &&
+      r.evaluation &&
+      (r.evaluation_claim_until ?? Infinity) <= Date.now()
+    ) {
+      this.finishEvaluation(s, r, {
+        ...unavailable(),
+        diagnostics: {
+          provider: "none",
+          attempts: 0,
+          failure_code: "EVALUATION_INTERRUPTED",
+        },
+      });
+      return false;
+    }
     if (expired && p?.status !== "CREATING") {
       r = this.move(s, r, "expire");
       if (
@@ -194,7 +213,16 @@ export class GuardService {
     agentId: string,
   ): Promise<StoredRequest> {
     const trusted = trustedQuote(input);
-    return this.store.tx((s) => {
+    const inputFingerprint = fingerprint(agentId, input);
+    input = sanitize(input);
+    const prepared = await this.store.tx((s) => {
+      const scope = operation.getStore();
+      const resourceId = scope ? s.idempotency[scope]?.resource_id : undefined;
+      if (resourceId && s.requests[resourceId]) {
+        const existing = s.requests[resourceId]!;
+        this.expire(s, existing);
+        return { r: s.requests[resourceId]!, context: null };
+      }
       const a = s.agents[agentId];
       if (!a) throw new Fault("UNAUTHENTICATED", 401, "Unknown agent.");
       for (const r of Object.values(s.requests)) this.expire(s, r);
@@ -210,7 +238,7 @@ export class GuardService {
         agent: { id: a.id, name: a.name },
         agent_reference: input.agent_reference ?? null,
         metadata: input.metadata ?? null,
-        fingerprint: fingerprint(a.id, input),
+        fingerprint: inputFingerprint,
         duplicate_of: null,
         evaluation: null,
         decision: null,
@@ -222,6 +250,7 @@ export class GuardService {
           payer: { state: "not_applicable", by: null, at: null, detail: null },
         },
         trusted_catalog: trusted,
+        correlation_id: correlation.getStore() ?? id("req"),
       };
       const actor: Principal = { kind: "agent", id: a.id, name: a.name };
       s.requests[r.id] = r;
@@ -229,8 +258,10 @@ export class GuardService {
       r = this.move(s, r, "evaluate");
       const { rules, duplicate } = evaluate(s, r, a, at);
       r.duplicate_of = duplicate?.id ?? null;
-      const risk = this.risk.assess(r);
-      const outcome = combine(rules, risk);
+      r.evaluation_claim_until = Date.now() + 10000;
+      if (scope && s.idempotency[scope])
+        s.idempotency[scope]!.resource_id = r.id;
+      const risk = unavailable();
       r.evaluation = {
         policy_set: {
           id: activePolicy.id,
@@ -240,51 +271,91 @@ export class GuardService {
         policy: rules,
         risk,
       };
-      r.decision = {
-        id: id("dec"),
-        outcome,
+      audit(s, "policy.evaluated", r, undefined, {
+        policy: rules,
         policy_outcome: policyOutcome(rules),
-        risk_escalated:
-          policyOutcome(rules) === "ALLOW" && outcome === "REVIEW",
-        reason_codes: rules
-          .filter((x) => x.outcome !== "pass")
-          .map((x) => `${x.rule_id}:${x.outcome}`),
-        reason:
-          outcome === "ALLOW"
-            ? "Within limits; trusted merchant; low risk."
-            : outcome === "BLOCK"
-              ? "Blocked by deterministic spending policy."
-              : "Human review required before payment.",
-        decided_at: at,
-        expires_at:
-          outcome === "ALLOW"
-            ? new Date(Date.now() + 1800000).toISOString()
-            : null,
-      };
-      audit(s, "policy.evaluated", r);
-      audit(
-        s,
-        risk.status === "unavailable" || risk.status === "timeout"
-          ? "risk.unavailable"
-          : "risk.assessed",
-        r,
-      );
+      });
       if (duplicate)
         audit(s, "request.duplicate_detected", r, actor, {
           duplicate_of: duplicate.id,
         });
-      r = this.move(
-        s,
-        r,
-        outcome === "ALLOW"
-          ? "allow"
-          : outcome === "BLOCK"
-            ? "block"
-            : "review",
-      );
-      checkpoint(s, this.project(s, r, actor), 201);
-      return r;
+      return { r, context: riskContext(s, r, a, rules) };
     });
+    if (!prepared.context) {
+      return this.store.tx((s) => {
+        const r = s.requests[prepared.r.id]!;
+        requireState(r.status !== "EVALUATING", r.status, [
+          "Completed evaluation",
+        ]);
+        checkpoint(s, this.project(s, r, { kind: "agent", ...r.agent }), 201);
+        return r;
+      });
+    }
+    const risk = await assessSafely(this.risk, prepared.r, prepared.context);
+    return this.store.tx((s) => {
+      const r = s.requests[prepared.r.id]!;
+      // An expired lease may already have been settled on a concurrent read.
+      if (r.status === "EVALUATING") this.finishEvaluation(s, r, risk);
+      const result = s.requests[r.id]!;
+      checkpoint(
+        s,
+        this.project(s, result, { kind: "agent", ...r.agent }),
+        201,
+      );
+      return result;
+    });
+  }
+  private finishEvaluation(
+    s: StoreState,
+    r: StoredRequest,
+    result: RiskResult,
+  ) {
+    const { diagnostics, ...risk } = result;
+    const rules = r.evaluation!.policy;
+    r.evaluation!.risk = risk;
+    r.evaluation_claim_until = 0;
+    const outcome = combine(rules, risk);
+    const policy = policyOutcome(rules);
+    r.decision = {
+      id: id("dec"),
+      outcome,
+      policy_outcome: policy,
+      risk_escalated: policy === "ALLOW" && outcome === "REVIEW",
+      reason_codes: [
+        ...rules
+          .filter((x) => x.outcome !== "pass")
+          .map((x) => `${x.rule_id}:${x.outcome}`),
+        ...risk.signals.map((x) => `risk:${x.code}`),
+        ...(["unavailable", "timeout"].includes(risk.status)
+          ? [`risk:${risk.status}`]
+          : []),
+      ],
+      reason:
+        outcome === "ALLOW"
+          ? "Within limits; trusted merchant; low risk."
+          : outcome === "BLOCK"
+            ? "Blocked by deterministic spending policy."
+            : "Human review required before payment.",
+      decided_at: now(),
+      expires_at:
+        outcome === "ALLOW"
+          ? new Date(Date.now() + 1800000).toISOString()
+          : null,
+    };
+    audit(
+      s,
+      risk.status === "unavailable" || risk.status === "timeout"
+        ? "risk.unavailable"
+        : "risk.assessed",
+      r,
+      undefined,
+      { risk, diagnostics },
+    );
+    this.move(
+      s,
+      r,
+      outcome === "ALLOW" ? "allow" : outcome === "BLOCK" ? "block" : "review",
+    );
   }
   async review(
     rid: string,
@@ -321,7 +392,7 @@ export class GuardService {
         id: id("rev"),
         action: body.action,
         reviewer: { id: p.id, name: p.name },
-        note: body.note ?? null,
+        note: body.note ? sanitize(body.note) : null,
         decided_at: now(),
       };
       if (body.action === "approve" && r.decision)
@@ -414,6 +485,7 @@ export class GuardService {
         if (pay!.status === "DECLINED") {
           pay = paymentTransition(pay!, "retry", now());
           pay.failure = null;
+          this.sync(s, r, pay);
           r = this.move(s, r, "checkout", p);
           this.sync(s, r, pay);
           return { done: this.bundle(s, r, pay, p) };
@@ -461,6 +533,11 @@ export class GuardService {
           409,
           "Ambiguous order creation requires manual investigation.",
         );
+      if (pay.create_claim_until !== undefined)
+        audit(s, "payment.retry_requested", r, p, {
+          phase: "create",
+          paypal_request_id: `ord_${pay.id}`,
+        });
       pay.create_claim_until = Date.now() + 60000;
       return { r, pay };
     });
@@ -501,6 +578,7 @@ export class GuardService {
           payer_action_url: link.href,
         };
         payment.create_claim_until = 0;
+        this.sync(s, current, payment);
         current = this.move(s, current, "checkout", p);
         this.sync(s, current, payment);
         return this.bundle(s, current, payment, p);
@@ -509,6 +587,13 @@ export class GuardService {
       await this.store.tx((s) => {
         const pay = s.payments[claim.pay.id]!;
         pay.create_claim_until = 0;
+        audit(s, "checkout.failed", s.requests[pay.purchase_request_id]!, p, {
+          phase: "create",
+          failure_code:
+            e instanceof PayPalError ? e.issue : "RESPONSE_UNVERIFIED",
+          paypal_request_id: `ord_${pay.id}`,
+          outcome: "unconfirmed",
+        });
         if (e instanceof PayPalError && e.http >= 400 && e.http < 500) {
           pay.failure = {
             code: "PAYPAL_ERROR",
@@ -517,6 +602,7 @@ export class GuardService {
             retryable: false,
           };
           const next = paymentTransition(pay, "failed", now());
+          this.sync(s, s.requests[pay.purchase_request_id]!, next);
           const r = this.move(
             s,
             s.requests[pay.purchase_request_id]!,
@@ -646,6 +732,11 @@ export class GuardService {
           "Maximum capture attempts reached.",
         );
       const n = pay.attempts.length + 1;
+      if (n > 1)
+        audit(s, "payment.retry_requested", r, p, {
+          phase: "capture",
+          paypal_request_id: `cap_${pay.id}_${n}`,
+        });
       pay = paymentTransition(pay, "capture", now());
       pay.paypal.order_status = order.status;
       pay.failure = null;
@@ -658,6 +749,7 @@ export class GuardService {
         issue: null,
         at: now(),
       });
+      this.sync(s, r, pay);
       audit(s, "payer.approved", r, p);
       r = this.move(s, r, "capture", p);
       this.sync(s, r, pay);
@@ -703,6 +795,11 @@ export class GuardService {
           attempt.status = "unknown";
           attempt.issue =
             e instanceof PayPalError ? e.issue : "RESPONSE_UNVERIFIED";
+          audit(s, "payment.outcome_unknown", r, p, {
+            phase: "capture",
+            failure_code: attempt.issue,
+            paypal_request_id: attempt.paypal_request_id,
+          });
           return this.bundle(s, r, current, p);
         }
         attempt.issue = e.issue;
@@ -749,6 +846,7 @@ export class GuardService {
               e.issue === "MAX_NUMBER_OF_PAYMENT_ATTEMPTS_EXCEEDED") &&
             current.attempts.length < 3,
         };
+        this.sync(s, r, current);
         r = this.move(
           s,
           r,
@@ -820,6 +918,7 @@ export class GuardService {
               retryable: pay.attempts.length < 3,
             }
           : null;
+      this.sync(s, r, pay);
       r = this.move(s, r, event, p);
       this.sync(s, r, pay);
       return this.bundle(s, r, pay, p);
@@ -838,6 +937,7 @@ export class GuardService {
         message: "The PayPal order expired. No payment was taken.",
         retryable: true,
       };
+      this.sync(s, r, pay);
       r = this.move(s, r, awaiting ? "order_expired" : "failed", p);
       this.sync(s, r, pay);
       return this.bundle(s, r, pay, p);
@@ -885,6 +985,10 @@ export class GuardService {
         )
           return null;
         pay.capture_claim_until = Date.now() + 60000;
+        audit(s, "payment.retry_requested", r, p, {
+          phase: "capture",
+          paypal_request_id: attempt.paypal_request_id,
+        });
         return pay;
       });
       if (claimed) return this.sendCapture(claimed, p, false);
@@ -923,6 +1027,12 @@ export function seedAgents(s: StoreState, keyHash?: string) {
         name,
         allowed_categories,
         owner_user_id: "usr_agent_owner",
+        authorized_purpose: {
+          agt_research01:
+            "Research, document indexing and evaluation workloads",
+          agt_opsbuyer01: "Office supplies and licensed team software",
+          agt_growth01: "Marketing campaigns and growth software",
+        }[id],
         key_hash:
           id === "agt_research01" ? (keyHash ?? "disabled") : `disabled:${id}`,
       };

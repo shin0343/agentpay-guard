@@ -60,6 +60,9 @@ export function verdictFor(r: PurchaseRequest): { word: string; tone: Tone; reas
 }
 
 export const EVENT_LABEL: Record<AuditEventType, string> = {
+  "checkout.failed": "Checkout unconfirmed",
+  "payment.outcome_unknown": "Confirming payment",
+  "payment.retry_requested": "Payment retry requested",
   "request.received": "Request received",
   "request.duplicate_detected": "Duplicate detected",
   "idempotency.replayed": "Retry replayed",

@@ -1,5 +1,7 @@
 import type { AuditEvent, AuditEventType, ChainVerification } from "@/contract";
 import type { Principal, StoreState, StoredRequest } from "../model";
+import { correlation } from "../idempotency/context";
+import { sanitize } from "../privacy";
 import { canonical, hash, id, now } from "../util";
 export function audit(
   s: StoreState,
@@ -9,6 +11,7 @@ export function audit(
   data: Record<string, unknown> = {},
 ) {
   const prev_hash = s.events.at(-1)?.hash ?? "0".repeat(64);
+  const payment = r?.payment ? s.payments[r.payment.id] : undefined;
   const e: Omit<AuditEvent, "hash"> = {
     id: id("evt"),
     object: "audit_event",
@@ -23,7 +26,37 @@ export function audit(
     amount: r?.amount ?? null,
     state_after: r?.status ?? null,
     summary: type.replaceAll(".", " "),
-    data,
+    data: sanitize(
+      {
+        correlation_id: correlation.getStore() ?? r?.correlation_id ?? null,
+        request_correlation_id: r?.correlation_id ?? null,
+        request_version: r?.version ?? null,
+        policy_set: r?.evaluation?.policy_set ?? null,
+        ...(type === "decision.made" ? { decision: r?.decision } : {}),
+        ...(type.startsWith("review.") ? { review: r?.review } : {}),
+        ...(payment
+          ? {
+              paypal: {
+                order_id: payment.paypal.order_id,
+                order_status: payment.paypal.order_status,
+                capture_id: payment.paypal.capture_id,
+                capture_status: payment.paypal.capture_status,
+                verification: payment.paypal.capture_id
+                  ? "verified_order_and_capture"
+                  : payment.paypal.order_id
+                    ? "verified_order"
+                    : "unconfirmed",
+                payment_version: payment.version,
+                payment_status: payment.status,
+                attempt: payment.attempts.at(-1) ?? null,
+                failure: payment.failure,
+              },
+            }
+          : {}),
+        ...data,
+      },
+      true,
+    ),
     prev_hash,
   };
   s.events.push({ ...e, hash: hash(prev_hash + canonical(e)) });

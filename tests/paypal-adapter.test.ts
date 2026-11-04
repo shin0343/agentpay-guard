@@ -77,6 +77,41 @@ describe("real Sandbox adapter HTTP boundary (stub transport)", () => {
     ).toBe(true);
     Order.parse(o);
   });
+  it("transient order-create retries reuse the same PayPal ID and report safe retry events", async () => {
+    const h = await harness();
+    const r = await h.service.create(SCENARIOS[0]!.payload, "agt_research01");
+    const checkout = await h.service.checkout(r.id, {
+      kind: "operator",
+      id: "op",
+      name: "Operator",
+    });
+    const stored = await h.store.tx((s) => s.payments[checkout.payment.id]!);
+    const order = await h.paypal.get(checkout.payment.paypal.order_id!);
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        json({ access_token: "private-token", expires_in: 3600 }),
+      )
+      .mockResolvedValueOnce(json({ name: "INTERNAL_SERVER_ERROR" }, 503))
+      .mockResolvedValueOnce(json(order, 201));
+    const retry = vi.fn().mockResolvedValue(undefined);
+    const adapter = new SandboxPayPal(cfg, fetcher, retry);
+    expect((await adapter.create(r, stored)).id).toBe(order.id);
+    const requests = fetcher.mock.calls
+      .slice(1)
+      .map(
+        (x) => (x[1]!.headers as Record<string, string>)["PayPal-Request-Id"],
+      );
+    expect(requests).toEqual([`ord_${stored.id}`, `ord_${stored.id}`]);
+    expect(retry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payment_id: stored.id,
+        attempt: 2,
+        failure_code: "INTERNAL_SERVER_ERROR",
+      }),
+    );
+    expect(JSON.stringify(retry.mock.calls)).not.toContain("private-token");
+  });
   it("maps PayPal issue and debug ID without exposing upstream payload", async () => {
     const transport = vi
       .fn<typeof fetch>()
@@ -101,6 +136,18 @@ describe("real Sandbox adapter HTTP boundary (stub transport)", () => {
     expect(e.issue).toBe("INSTRUMENT_DECLINED");
     expect(e.debug).toBe("debug");
     expect(JSON.stringify(e)).not.toContain("never log");
+  });
+  it("upstream error metadata cannot persist raw payloads or credential-shaped values", () => {
+    const error = new PayPalError(
+      502,
+      "token=private-upstream-value",
+      "sk-privatecredential",
+    );
+    expect(error.issue).toBe("PAYPAL_ERROR");
+    expect(error.debug).toBeNull();
+    expect(JSON.stringify(error)).not.toMatch(
+      /private-upstream-value|privatecredential/,
+    );
   });
   it("verifies webhook via official endpoint and rejects untrusted certificate hosts", async () => {
     const transport = vi

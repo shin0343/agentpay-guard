@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { StoredPayment, StoredRequest } from "../model";
 import type { Config } from "../config";
+import { redact } from "../privacy";
 import { Fault } from "../util";
 export const Order = z.object({
   id: z.string().regex(/^[A-Z0-9]{1,36}$/),
@@ -52,12 +53,24 @@ export const Order = z.object({
 });
 export type Order = z.infer<typeof Order>;
 export class PayPalError extends Error {
+  readonly issue: string;
+  readonly debug: string | null;
   constructor(
     public http: number,
-    public issue: string,
-    public debug: string | null = null,
+    issue: string,
+    debug: string | null = null,
   ) {
     super("PayPal request failed");
+    this.issue =
+      typeof issue === "string" && /^[A-Z0-9_]{1,80}$/.test(issue)
+        ? issue
+        : "PAYPAL_ERROR";
+    this.debug =
+      typeof debug === "string" &&
+      /^[A-Za-z0-9_-]{1,128}$/.test(debug) &&
+      redact(debug) === debug
+        ? debug
+        : null;
   }
 }
 export interface PayPal {
@@ -66,6 +79,14 @@ export interface PayPal {
   capture(order: string, key: string, simulate: boolean): Promise<Order>;
   verify(headers: Headers, event: unknown): Promise<boolean>;
 }
+export type PayPalRetry = {
+  purchase_request_id: string;
+  payment_id: string;
+  paypal_request_id: string;
+  attempt: number;
+  failure_code: string;
+  at: string;
+};
 export class SandboxPayPal implements PayPal {
   private token: { value: string; expires: number } | undefined;
   constructor(
@@ -80,6 +101,7 @@ export class SandboxPayPal implements PayPal {
       | "DEMO_MODE"
     >,
     private transport: typeof fetch = fetch,
+    private onRetry?: (event: PayPalRetry) => Promise<void>,
   ) {
     if (cfg.PAYPAL_API_BASE !== "https://api-m.sandbox.paypal.com")
       throw new Error("Sandbox endpoint required");
@@ -192,6 +214,14 @@ export class SandboxPayPal implements PayPal {
           n >= 2
         )
           throw e;
+        await this.onRetry?.({
+          purchase_request_id: r.id,
+          payment_id: p.id,
+          paypal_request_id: `ord_${p.id}`,
+          attempt: n + 2,
+          failure_code: e.issue,
+          at: new Date().toISOString(),
+        });
         await new Promise((resolve) => setTimeout(resolve, [300, 900][n]));
       }
     }

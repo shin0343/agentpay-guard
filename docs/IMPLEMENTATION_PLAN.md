@@ -6,13 +6,17 @@ Today: **Tue 2026-11-03**. Deadline: **Thu 2026-11-12, 12:00 PM PST**. Internal 
 
 ## 1. Stack (decided)
 
+Implementation update (2026-11-03): the real risk provider is OpenAI Responses with strict
+JSON Schema and server validation; `fixture` remains explicitly simulated. PostgreSQL JSONB
+persists evaluations and audit history. See `AI_RISK_ENGINE.md` and `DEMO_VERIFICATION.md`.
+
 | Layer | Choice | Note |
 |---|---|---|
 | App | Next.js (App Router) + React + TypeScript (strict) | One repo, one deploy |
 | Styling | Tailwind CSS v4 + CSS variables from `DESIGN_SYSTEM.md` | Tokens only, no raw hex in components |
 | Validation | Zod (`src/contract`) shared by UI and route handlers | Single source of truth |
 | Data | Prisma + SQLite (local) / Postgres (deploy: Neon or Vercel Postgres) | Partial unique index needs Postgres or SQLite ≥ 3.8 |
-| AI | `RiskAssessor` interface; Anthropic `claude-sonnet-5-5` default; `FixtureRiskAssessor` | Structured JSON output |
+| AI | `RiskAssessor`; OpenAI Responses with configurable pinned model; explicit fixture mode | Strict structured output and local Zod validation |
 | Payments | PayPal Orders v2 REST (server) + PayPal JS SDK Buttons (client), Sandbox | No PayPal secrets in the browser |
 | Tests | Vitest (unit/state machine), Playwright (scenarios A–E end-to-end) | |
 | Deploy | Vercel (or Render if long-running functions are needed) | |

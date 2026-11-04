@@ -1,4 +1,4 @@
-import { operation } from "./idempotency/context";
+import { correlation, operation } from "./idempotency/context";
 import { z } from "zod";
 import {
   AuditEventType,
@@ -37,7 +37,7 @@ export class GuardHttp {
   async handle(req: Request): Promise<Response> {
     const trace = id("req");
     try {
-      const response = await this.route(req);
+      const response = await correlation.run(trace, () => this.route(req));
       response.headers.set("X-Request-Id", trace);
       response.headers.set("Cache-Control", "no-store");
       return response;
@@ -178,6 +178,9 @@ export class GuardHttp {
         state: "processing",
         expires: Date.now() + 86400000,
         lease: Date.now() + 60000,
+        ...(existing && existing.expires > Date.now() && existing.resource_id
+          ? { resource_id: existing.resource_id }
+          : {}),
       };
       return null;
     });
@@ -388,6 +391,7 @@ export class GuardHttp {
                       (r) =>
                         reserved.includes(r.status) &&
                         r.status !== "IN_REVIEW" &&
+                        r.status !== "EVALUATING" &&
                         localDay(r.created_at) ===
                           localDay(new Date().toISOString()),
                     )

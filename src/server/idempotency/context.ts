@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { StoreState } from "../model";
 /** Persist the API result in the SAME transaction as its business effect. */
+export const correlation = new AsyncLocalStorage<string>();
 export const operation = new AsyncLocalStorage<string>();
 export function checkpoint(s: StoreState, body: unknown, status = 200) {
   const scope = operation.getStore();

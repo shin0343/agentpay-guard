@@ -242,6 +242,13 @@ Invariants:
 
 ## 7. Implementation clarifications (2026-11-03)
 
+Evaluation persists EVALUATING and its policy snapshot before external AI I/O, releasing the
+database lock. EVALUATING requests reserve daily budget while in flight. An evaluation lease
+expires after ten seconds; lazy reads/mutations settle abandoned evaluations conservatively
+using the saved policy and unavailable risk. Late model responses cannot overwrite that decision.
+Create idempotency records retain the resource ID across lease recovery, preventing a second
+purchase after interruption. Model failures never silently select fixture mode.
+
 `CREATING` is persisted while its request remains ALLOWED until order creation succeeds; a definitive create failure projects PAYMENT_FAILED. Creating orders cannot be cancelled or expired until their result is reconciled. A safe order GET reporting CREATED/PAYER_ACTION_REQUIRED never grants the payer key. Mapping PAYER_ACTION_REQUIRED after capture returns request CHECKOUT_PENDING and payment AWAITING_PAYER. Definitive create failure allows cancellation. Payment cancellation also accepts DECLINED/FAILED/EXPIRED (local abandonment, no invented PayPal void API).
 
 Reconciliation may recover an interrupted create using the identical create ID; it may settle a matching captured order after policy expiry (settlement records money already moved). It never initiates a new capture after approval expiry. An unknown capture stays CAPTURING until a verified outcome; expiry cannot overwrite it. PENDING may resolve to FAILED as well as DECLINED/COMPLETED. Refund statuses are never translated into a fresh successful payment.

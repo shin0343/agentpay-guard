@@ -14,7 +14,8 @@
     "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts",
     "test:postgres": "APG_POSTGRES_TEST=true vitest run tests/postgres.test.ts",
     "sandbox:verify": "tsx --env-file-if-exists=.env.local scripts/verify-sandbox.ts",
-    "build:webpack": "next build --webpack"
+    "build:webpack": "next build --webpack",
+    "risk:verify": "tsx --env-file-if-exists=.env.local scripts/verify-risk.ts"
   },
   "dependencies": {
     "next": "16.4.5",

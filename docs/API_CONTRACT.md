@@ -7,6 +7,14 @@ Owner of implementation: backend agent (Codex). Owner of contract: product/front
 
 ## 0. Conventions
 
+Implementation clarification (2026-11-03): risk evaluation uses OpenAI Responses structured outputs,
+with local strict validation and an eight-second deadline. Existing RiskAssessment fields remain
+unchanged. Audit `data` includes correlation IDs, policy/request versions, redacted risk details,
+evaluation provenance and safe failure codes. New additive event types are `checkout.failed`,
+`payment.outcome_unknown`, and `payment.retry_requested`; these do not imply settlement.
+Purchase free text and reviewer notes are redacted before persistence; raw provider payloads,
+credentials and payer PII are excluded. No AI result authorizes checkout or capture.
+
 | Topic | Rule |
 |---|---|
 | Base path | `/api/v1` (Next.js App Router route handlers under `app/api/v1/**/route.ts`) |
@@ -236,6 +244,7 @@ export const Payment = z.object({
 ```ts
 // src/contract/audit.ts
 export const AuditEventType = z.enum([
+  "checkout.failed", "payment.outcome_unknown", "payment.retry_requested",
   "request.received", "request.duplicate_detected", "idempotency.replayed",
   "policy.evaluated", "risk.assessed", "risk.unavailable", "decision.made",
   "review.approved", "review.rejected",

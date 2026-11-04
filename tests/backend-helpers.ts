@@ -4,6 +4,7 @@ import type { PayPal, Order } from "@/server/paypal/client";
 import { PayPalError } from "@/server/paypal/client";
 import type { StoredRequest, StoredPayment } from "@/server/model";
 import { seedAgents, GuardService } from "@/server/service";
+import type { RiskAssessor } from "@/server/risk/assessor";
 import { SafeRiskAssessor } from "@/server/risk/assessor";
 import { GuardHttp } from "@/server/http";
 import type { Config } from "@/server/config";
@@ -116,19 +117,17 @@ export const cfg: Config = {
   DEMO_MODE: "true",
   DEMO_PASSCODES: "reviewer:reviewer,operator:operator",
   RISK_PROVIDER: "fixture",
+  OPENAI_RISK_MODEL: "gpt-4o-mini-2024-07-18",
   DEMO_AGENT_KEY: agentKey,
   TRUST_PROXY: "false",
 };
-export async function harness(store: Store = new MemoryStore()) {
+export async function harness(
+  store: Store = new MemoryStore(),
+  risk: RiskAssessor = new SafeRiskAssessor("fixture"),
+) {
   await store.tx((s) => seedAgents(s, hash(agentKey)));
   const paypal = new FakePayPal();
-  const service = new GuardService(
-    store,
-    paypal,
-    new SafeRiskAssessor("fixture"),
-    "MERCHANT",
-    true,
-  );
+  const service = new GuardService(store, paypal, risk, "MERCHANT", true);
   const http = new GuardHttp(service, cfg);
   const reviewer = http.auth.issue({
     id: "usr_okafor",

@@ -2,6 +2,9 @@ import { readFile } from "node:fs/promises";
 import { afterAll, beforeAll, describe, it, expect } from "vitest";
 import { PostgresStore } from "@/server/db/postgres";
 import { SCENARIOS } from "@/contract/fixtures/scenarios";
+import { OpenAIRiskAssessor } from "@/server/risk/openai";
+import { modelEnvelope, riskScenarios } from "./fixtures/risk-scenarios";
+import { vi } from "vitest";
 import { harness } from "./backend-helpers";
 import { PurchaseRequest, RequestWithPayment } from "@/contract";
 import { verify } from "@/server/audit/ledger";
@@ -125,6 +128,45 @@ describe.skipIf(!enabled)("real PostgreSQL migration and concurrency", () => {
     expect(await fresh.store.tx((s) => verify(s.events))).toMatchObject({
       ok: true,
     });
+  });
+  it("AI inference metadata, signals and decision persist across fresh database clients", async () => {
+    const transport = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json(modelEnvelope()));
+    const live = await harness(
+      open(),
+      new OpenAIRiskAssessor("test-key", "gpt-4o-mini-2024-07-18", transport),
+    );
+    const input = riskScenarios.injection();
+    input.items[0]!.quantity = 3;
+    input.amount.value = "54.00";
+    const request = await live.service.create(input, "agt_research01");
+    expect(request.status).toBe("IN_REVIEW");
+    const fresh = await harness(open());
+    const persisted = PurchaseRequest.parse(
+      await (await fresh.call(`purchase-requests/${request.id}`)).json(),
+    );
+    expect(persisted.evaluation?.risk).toMatchObject({
+      status: "completed",
+      model: "gpt-4o-mini-2024-07-18",
+      signals: [expect.objectContaining({ code: "prompt_injection" })],
+    });
+    const events = await fresh.store.tx((s) =>
+      s.events.filter((e) => e.purchase_request_id === request.id),
+    );
+    expect(
+      events.find((e) => e.type === "risk.assessed")?.data.diagnostics,
+    ).toMatchObject({
+      response_id: "resp_test001",
+      deterministic_signals: ["prompt_injection"],
+    });
+    expect(
+      events.find((e) => e.type === "decision.made")?.data.decision,
+    ).toMatchObject({ outcome: "REVIEW" });
+    expect(await fresh.store.tx((s) => verify(s.events))).toMatchObject({
+      ok: true,
+    });
+    expect(transport).toHaveBeenCalledOnce();
   });
   it("database rejects a second open payment", async () => {
     const store = open();

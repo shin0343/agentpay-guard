@@ -14,9 +14,12 @@ export type Agent = {
   owner_user_id: string;
   allowed_categories: MerchantCategory[];
   key_hash: string;
+  authorized_purpose?: string;
 };
 export type StoredRequest = PurchaseRequest & {
   trusted_catalog: boolean;
+  evaluation_claim_until?: number;
+  correlation_id?: string;
   retry_extended?: boolean;
 };
 export type StoredPayment = Payment & {
@@ -31,6 +34,7 @@ export type Idem = {
   lease: number;
   status?: number;
   body?: unknown;
+  resource_id?: string;
 };
 export type StoreState = {
   requests: Record<string, StoredRequest>;

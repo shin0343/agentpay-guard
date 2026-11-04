@@ -15,10 +15,22 @@ export function config(env: Record<string, string | undefined> = process.env) {
       DEMO_MODE: z.enum(["true", "false"]).default("false"),
       DEMO_PASSCODES: z.string().default(""),
       DEMO_AGENT_KEY: z.string().optional(),
-      RISK_PROVIDER: z.string().default("unavailable"),
+      RISK_PROVIDER: z
+        .enum(["openai", "fixture", "unavailable"])
+        .default("unavailable"),
+      OPENAI_API_KEY: z.preprocess(
+        (v) => (v === "" ? undefined : v),
+        z.string().min(1).optional(),
+      ),
+      OPENAI_RISK_MODEL: z
+        .string()
+        .regex(/^[A-Za-z0-9._:-]{1,120}$/)
+        .default("gpt-4o-mini-2024-07-18"),
       TRUST_PROXY: z.enum(["true", "false"]).default("false"),
     })
     .parse(env);
+  if (cfg.RISK_PROVIDER === "fixture" && cfg.DEMO_MODE !== "true")
+    throw new Error("Fixture risk requires DEMO_MODE=true");
   const url = new URL(cfg.APP_URL);
   if (
     url.username ||

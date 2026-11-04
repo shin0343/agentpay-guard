@@ -1,6 +1,6 @@
 # Frontend Handoff
 
-Status: frontend **complete in mock mode** (2026-11-03). Backend foundation and Sandbox REST adapter are now implemented; see `PAYPAL_INTEGRATION.md` and `TEST_REPORT.md`. Real payer checkout and a real AI provider remain unverified. Existing frontend components are unchanged.
+Status: frontend **complete in mock mode** (2026-11-03). Backend foundation and Sandbox REST adapter are now implemented; see `PAYPAL_INTEGRATION.md` and `TEST_REPORT.md`. The real OpenAI provider is now implemented; live inference and real payer checkout remain unverified. See `AI_RISK_ENGINE.md` and `DEMO_VERIFICATION.md`. Existing frontend components are unchanged.
 Read first: `AGENTS.md` (binding rules), `DESIGN_SYSTEM.md` (constitution), `API_CONTRACT.md`, `PAYMENT_STATE_MACHINE.md`.
 
 ---

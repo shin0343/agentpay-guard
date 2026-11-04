@@ -27,6 +27,7 @@ export function fingerprint(
   );
 }
 export const reserved = [
+  "EVALUATING",
   "IN_REVIEW",
   "ALLOWED",
   "CHECKOUT_PENDING",

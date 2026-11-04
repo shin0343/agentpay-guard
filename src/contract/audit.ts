@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Money, RequestStatus, listOf } from "./common";
 
 export const AuditEventType = z.enum([
+  "checkout.failed", "payment.outcome_unknown", "payment.retry_requested",
   "request.received", "request.duplicate_detected", "idempotency.replayed",
   "policy.evaluated", "risk.assessed", "risk.unavailable", "decision.made",
   "review.approved", "review.rejected",

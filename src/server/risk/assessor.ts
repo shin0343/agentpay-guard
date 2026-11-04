@@ -4,7 +4,10 @@ import { fingerprint } from "../policy/engine";
 import { canonical } from "../util";
 import { SCENARIOS } from "@/contract/fixtures/scenarios";
 export interface RiskAssessor {
-  assess(request: StoredRequest): RiskAssessment;
+  assess(
+    request: StoredRequest,
+    context?: import("./context").RiskContext,
+  ): RiskAssessment | Promise<RiskAssessment>;
 }
 export class SafeRiskAssessor implements RiskAssessor {
   constructor(private provider: string) {}
