@@ -1,0 +1,266 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Ledger Instrument — tokens. Source of truth: docs/DESIGN_SYSTEM.md Part 1.
+   Components must use these tokens only. No raw hex anywhere else.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --paper: #f4f2ec;
+  --raised: #fbfaf7;
+  --sunken: #ece9e1;
+  --ink: #16150f;
+  --ink-2: #45423a;
+  --muted: #6b675d;
+  --rule: #ddd9ce;
+  --rule-strong: #8c887d;
+  --allow: #1d6b45;
+  --allow-tint: #e3efe6;
+  --review: #8f5600;
+  --review-tint: #f5e9d3;
+  --block: #b42a18;
+  --block-tint: #f6e1dc;
+  --focus: #2f4fd8;
+  --on-ink: #ffffff;
+
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 10px;
+  --shadow-pop: 0 1px 2px rgb(22 21 15 / 0.06), 0 8px 24px rgb(22 21 15 / 0.08);
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.6, 0, 0.2, 1);
+  --t-fast: 120ms;
+  --t-base: 200ms;
+  --t-slow: 320ms;
+
+  --gutter: clamp(16px, 4vw, 40px);
+  --topbar: 56px;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121210; --raised: #1a1a17; --sunken: #22221e;
+    --ink: #edebe4; --ink-2: #c2beb3; --muted: #9a968b;
+    --rule: #2c2b27; --rule-strong: #6b6a63;
+    --allow: #5bc18a; --allow-tint: #15291d;
+    --review: #e0a43a; --review-tint: #2c2212;
+    --block: #f0785f; --block-tint: #2e1813;
+    --focus: #8fa4ff; --on-ink: #121210;
+    --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #121210; --raised: #1a1a17; --sunken: #22221e;
+  --ink: #edebe4; --ink-2: #c2beb3; --muted: #9a968b;
+  --rule: #2c2b27; --rule-strong: #6b6a63;
+  --allow: #5bc18a; --allow-tint: #15291d;
+  --review: #e0a43a; --review-tint: #2c2212;
+  --block: #f0785f; --block-tint: #2e1813;
+  --focus: #8fa4ff; --on-ink: #121210;
+  --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.45);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-raised: var(--raised);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-allow: var(--allow);
+  --color-allow-tint: var(--allow-tint);
+  --color-review: var(--review);
+  --color-review-tint: var(--review-tint);
+  --color-block: var(--block);
+  --color-block-tint: var(--block-tint);
+  --color-focus: var(--focus);
+  --color-on-ink: var(--on-ink);
+
+  --font-display: var(--font-newsreader), ui-serif, Georgia, serif;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+}
+
+/* ── Type styles (DESIGN_SYSTEM.md §1.3) ─────────────────────────────────── */
+
+@utility t-display-xl {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 1.02;
+  font-weight: 450;
+  letter-spacing: -0.025em;
+  font-optical-sizing: auto;
+}
+@utility t-display-l {
+  font-family: var(--font-display);
+  font-size: 34px;
+  line-height: 38px;
+  font-weight: 450;
+  letter-spacing: -0.02em;
+  @media (min-width: 640px) {
+    font-size: 44px;
+    line-height: 48px;
+  }
+}
+@utility t-display-m {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+@utility t-title {
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+@utility t-body {
+  font-size: 15px;
+  line-height: 22px;
+}
+@utility t-small {
+  font-size: 13px;
+  line-height: 18px;
+}
+@utility t-label {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+@utility t-data {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+@utility t-amount-l {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+@utility t-amount {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility gutter {
+  padding-inline: var(--gutter);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 22px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  ::selection {
+    background: var(--sunken);
+    color: var(--ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  [hidden] {
+    display: none !important;
+  }
+}
+
+/* ── Signature motions (DESIGN_SYSTEM.md §1.6) — the only showpiece animations ── */
+
+@keyframes apg-resolve {
+  from { opacity: 0.25; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes apg-land {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes apg-band {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes apg-turn {
+  from { transform: rotate(-90deg); }
+  to { transform: none; }
+}
+@keyframes apg-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes apg-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@keyframes apg-sheet {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.motion-resolve { animation: apg-resolve var(--t-base) var(--ease-out) both; }
+.motion-land { animation: apg-land var(--t-slow) var(--ease-out) both; }
+.motion-band { transform-origin: left; animation: apg-band var(--t-slow) var(--ease-out) both; }
+.motion-turn { animation: apg-turn var(--t-base) var(--ease-out) both; }
+.motion-fade { animation: apg-fade var(--t-base) var(--ease-out) both; }
+.motion-pulse { animation: apg-pulse 1.4s var(--ease-in-out) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .motion-pulse { animation: none !important; }
+}
+
+/* Native <dialog> used for Dialog and Sheet */
+dialog::backdrop {
+  background: rgb(22 21 15 / 0.32);
+}
+dialog[open].apg-sheet {
+  animation: apg-sheet var(--t-base) var(--ease-out) both;
+}

@@ -39,7 +39,7 @@ agentpay-guard/
 │  │  └─ guard/                   # DecisionTrace, VerdictMark, TwoKey, QueueRow, LedgerRow, PayPalZone
 │  ├─ lib/api-client.ts           # typed fetch wrapper; parses every response with Zod
 │  ├─ lib/copy.ts                 # all UI strings (canonical vocabulary)
-│  └─ styles/globals.css          # tokens (light + dark)
+│  └─ app/globals.css             # tokens (light + dark)
 └─ tests/ unit/  e2e/
 ```
 
@@ -60,7 +60,7 @@ Rules:
 
 | Day | Frontend / design | Backend (Codex) | Exit criterion |
 |---|---|---|---|
-| **Tue 11/3** | ✅ Docs. Scaffold app, tokens, fonts, `src/contract` + fixtures | — | `pnpm test` validates fixtures |
+| **Tue 11/3** | ✅ Docs. ✅ **Full frontend in mock mode** (all screens, scenarios A–E, visual QA desktop + mobile). See `FRONTEND_HANDOFF.md` | — | ✅ `pnpm check` green, 22 tests |
 | **Wed 11/4** | App shell, top bar, `Button/StatusLabel/IdTag`, mock API client | Prisma schema, `transitions.ts` + tests T1–T10 (PayPal and AI mocked), idempotency middleware | State machine tests green |
 | **Thu 11/5** | Workspace (queue + detail), `DecisionTrace`, `VerdictMark`, `TwoKey`, live trace motion | Policy engine (P-01…P-08), endpoints 1–4, 6, 12, 13; agent key + session auth | Scenario B/C/D decisions correct via `curl` |
 | **Fri 11/6** | Review flow, Send-test-request sheet, empty/error states | `RiskAssessor` (Anthropic + fixture), prompt r-2, injection detection | A gets risk < 35; C flags `prompt_injection` |
@@ -97,10 +97,13 @@ Rules:
 
 ## 7. The exact next step
 
+> **Update 2026-11-03:** steps 1–4 below are done. The frontend is complete against the mock adapter. **Next:** the backend agent implements `src/server/state/transitions.ts` plus tests T1–T10, then the route handlers listed in `FRONTEND_HANDOFF.md §4`, and switches `NEXT_PUBLIC_API_MODE=live`. `src/lib/api/mock/engine.ts` is a working reference implementation of the same rules (policy, combine, state machines, idempotency, hash chain).
+
+
 **Scaffold the app and freeze the contract in code:**
 
 1. In `agentpay-guard/`, create the Next.js app (App Router, TypeScript strict, Tailwind v4, `src/` dir, pnpm), keeping `docs/`, `AGENTS.md` and `CLAUDE.md`.
 2. Write `src/contract/{common,purchase-request,payment,audit,errors}.ts` **verbatim** from `API_CONTRACT.md §1`.
 3. Write `src/contract/fixtures/` with one `PurchaseRequest` (and `Payment` where relevant) per scenario A–E, using the data in `DEMO_SCENARIOS.md`, plus `tests/unit/contract.test.ts` that parses every fixture.
-4. Put the light and dark tokens from `DESIGN_SYSTEM.md` Part 1 in `src/styles/globals.css` and wire the three fonts.
+4. Put the light and dark tokens from `DESIGN_SYSTEM.md` Part 1 in `src/app/globals.css` and wire the three fonts.
 5. Hand the backend agent `API_CONTRACT.md`, `PAYMENT_STATE_MACHINE.md` and `src/contract/` with the instruction: "Implement `src/server/state/transitions.ts` and make tests T1–T10 pass before any route handler."

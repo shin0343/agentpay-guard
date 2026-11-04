@@ -1,6 +1,6 @@
 # API Contract — v1
 
-Status: **frozen for v1**. Additive changes (new optional fields, new enum values that clients may treat as unknown) are allowed. Breaking changes need a new version prefix and an update to this file *first*.
+Status: **frozen for v1** (amended 2026-11-03, see §8). Additive changes (new optional fields, new enum values that clients may treat as unknown) are allowed. Breaking changes need a new version prefix and an update to this file *first*.
 Owner of implementation: backend agent (Codex). Owner of contract: product/frontend. Companion: `PAYMENT_STATE_MACHINE.md`.
 
 ---
@@ -568,3 +568,13 @@ Capture: `POST /v2/checkout/orders/{id}/capture` with `PayPal-Request-Id: cap_<p
 
 `APP_URL`, `DATABASE_URL`, `SESSION_SECRET`, `DEMO_MODE`, `DEMO_PASSCODES`, `DEMO_AGENT_KEY`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_API_BASE=https://api-m.sandbox.paypal.com`, `RISK_PROVIDER=anthropic|fixture`, `RISK_MODEL=claude-sonnet-5-5`, `ANTHROPIC_API_KEY`.
 `PAYPAL_CLIENT_ID` is the only one exposed to the browser (via endpoint 17).
+
+
+## 8. Amendments
+
+| Date | Change | Reason |
+|---|---|---|
+| 2026-11-03 | `Payment.paypal.environment` enum is `"sandbox" \| "mock"`. The backend **always** returns `"sandbox"`. `"mock"` is produced only by the frontend mock adapter. | Lets the UI label simulated results honestly without a separate type |
+| 2026-11-03 | Zod 4 syntax in `src/contract`: `z.record(key, value)` (two arguments) and `z.url()`. Shapes are unchanged. | Zod 4.6 is the installed version |
+| 2026-11-03 | Shared fixtures: scenario payloads live in `src/contract/fixtures/scenarios.ts`. The backend's `/demo/scenarios/{key}/run` must send the same payloads. | Single source for demo data |
+| 2026-11-03 | Frontend boundary documented in `docs/FRONTEND_HANDOFF.md` §4 (method → endpoint map). | Backend handoff |

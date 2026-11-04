@@ -205,6 +205,7 @@ A rule that blocks short-circuits nothing visually. All 8 rules still show, so t
 
 - **Primary action:** the PayPal button (official SDK, unmodified).
 - **Flow:** `createOrder` → `POST /api/v1/purchase-requests/{id}/checkout` → returns `paypal_order_id`. On `onApprove` → `POST /api/v1/payments/{payment_id}/capture` → navigate to `/payments/[id]`. `onCancel` → inline "You closed PayPal. Nothing was charged." and the button stays. `onError` → inline error with retry.
+- **Mock mode (implemented 2026-11-03):** the PayPal button is replaced by a clearly labelled "Simulated PayPal approval" panel: [Open PayPal (simulated)] → simulated payer window → [Approve as payer] / [Close without approving]. No PayPal branding is imitated.
 - **Redirect fallback:** if popups are blocked, show `Continue to PayPal ↗` (the `payer-action` link). The return lands on `/checkout/return?token=…`, which triggers capture server-side and redirects to the result.
 - **Judging:** *Implementation* (real PayPal Sandbox), *Design* (the two keys made tangible), *Innovation*.
 

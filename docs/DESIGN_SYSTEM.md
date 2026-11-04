@@ -174,7 +174,7 @@ Signature motions (the only "showpiece" animations allowed):
 
 ### 1.7 Iconography
 
-- Lucide icons, 16px (20px in top bar), stroke 1.5, `currentColor`.
+- A Lucide-style geometry set, 16px (20px in top bar), stroke 1.5, `currentColor`. *Amended 2026-11-03:* implemented as ~16 inline paths in `src/components/ui/icon.tsx` instead of the `lucide-react` dependency. Add new glyphs there in the same 16px grid.
 - Icons accompany labels. Icon-only buttons need `aria-label` and a tooltip.
 - No icon backgrounds, circles or squares.
 
@@ -316,6 +316,8 @@ No horizontal page scroll at any width. Wide tables scroll inside their own cont
 
 ## Part 6 — Review checklist (paste into every UI PR)
 
+(See Part 7 for where each rule lives in code.)
+
 - [ ] Exactly one primary button in each view
 - [ ] No hex values outside `globals.css`
 - [ ] Color only on verdict or payment state, always paired with a word
@@ -326,3 +328,28 @@ No horizontal page scroll at any width. Wide tables scroll inside their own cont
 - [ ] Keyboard path works, focus is visible, contrast checked
 - [ ] Verified at 375px, 768px, 1280px with no horizontal scroll
 - [ ] None of the forbidden patterns from §0.2 are present
+
+
+---
+
+## Part 7 — Implementation map (added 2026-11-03, binding)
+
+| Concept | Lives in | Notes |
+|---|---|---|
+| Tokens (light + dark) | `src/app/globals.css` (`:root`, `@theme inline`) | The only file allowed to contain color literals |
+| Type styles | `@utility t-display-xl … t-amount` in `globals.css` | Use these utilities. Never ad-hoc font sizes for these roles |
+| Signature motions | `.motion-resolve`, `.motion-land`, `.motion-band`, `.motion-turn` | Plus `.motion-fade` (menus/sheets only) and `.motion-pulse` (live status dots, status lines). Nothing else animates |
+| Vocabulary and verdict lines | `src/lib/copy.ts` (`STATUS`, `verdictFor`, `EVENT_LABEL`, `COPY`) | Add new states here first |
+| Tone → class maps | `TONE_TEXT/BG/TINT/BORDER` in `components/ui/primitives.tsx` | Never build class names dynamically (`border-${tone}`): Tailwind cannot see them |
+| Signature components | `components/guard/verdict.tsx`, `trace.tsx` | `DecisionTrace` has a `compact` variant for the landing hero only |
+
+Layout decisions made during visual QA (keep them):
+- Workspace queue pane is **392px** (fits all six filter chips on one line). Detail measure stays ≤ 880px.
+- Trace rows are **single-line**. The `limit` gets its own column at ≥ 1280px and is a tooltip below that. On < 768px each row shows its one-line `message` instead of observed/limit (except the compact hero).
+- The landing hero's text column is `sticky` beside the taller trace panel. Do not pad the text column with filler to "balance" it.
+- Responsive display toggles go on a **wrapper element**, never on a `Button`/`ButtonLink` itself (`hidden` loses to the component's own `inline-flex`; this caused a 500px-wide mobile page).
+- Every grid that holds the trace or tables needs `grid-cols-1`/`minmax(0,1fr)` + `min-w-0` on its children.
+- Long IDs: short form (`preq_…7F3K`) everywhere except the References list, which uses the `IdTag full` variant (`break-all`).
+- Mock mode is always labelled: `[MOCK]` env tag, top banner, "Simulated PayPal approval" panel, `[SIMULATED]` tag on paid results. Never style the mock payer panel like PayPal.
+
+Visual QA procedure: `scripts/visual-qa.cjs` (desktop 1440×900, mobile 390×844). A UI change is not done until both runs report `errors: none` and the screenshots have been looked at.

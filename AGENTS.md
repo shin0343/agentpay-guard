@@ -10,6 +10,7 @@ This project has a fixed design philosophy and a frozen API contract. You are ex
 | API routes, server logic, DB | `docs/API_CONTRACT.md` + `docs/PAYMENT_STATE_MACHINE.md` |
 | Demo data or seeds | `docs/DEMO_SCENARIOS.md` (all fictional) |
 | Scope or priorities | `docs/PRODUCT_BRIEF.md` + `docs/IMPLEMENTATION_PLAN.md` |
+| Connecting the backend to the UI | `docs/FRONTEND_HANDOFF.md` (the `GuardApi` boundary; never rewrite UI to fit an API) |
 
 ## Non-negotiables (summary; the docs win if they differ)
 
@@ -21,9 +22,11 @@ This project has a fixed design philosophy and a frozen API contract. You are ex
 5. One line of reason (≤ 16 words) per state. Detail goes behind a disclosure.
 6. Motion is limited to the three signature motions (trace resolve, verdict land, key turn). Respect reduced motion.
 7. Never show "Paid" unless status is `PAID`. Always show both keys (Policy approval and Payer approval).
-8. Use design tokens only (`src/styles/globals.css`). No raw hex in components.
+8. Use design tokens only (`src/app/globals.css`). No raw hex in components.
 9. Use the canonical vocabulary in `DESIGN_SYSTEM.md` Part 3. All strings go in `src/lib/copy.ts`.
 10. Never restyle the PayPal button.
+11. Components get data only through `GuardApi` (`src/lib/api`). No `fetch` in components.
+12. Before finishing UI work, run `scripts/visual-qa.cjs` on desktop and mobile and actually look at the screenshots (`DESIGN_SYSTEM.md` Part 7).
 
 **Backend**
 1. Response shapes come from `src/contract` (Zod). Never redefine them.
