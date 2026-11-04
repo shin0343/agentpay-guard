@@ -2,6 +2,8 @@
 
 Today: **Tue 2026-11-03**. Deadline: **Thu 2026-11-12, 12:00 PM PST**. Internal target: **submit by Wed 2026-11-11, 8:00 PM PST**, which leaves a 16-hour buffer.
 
+> Backend implementation update (2026-11-03): user requested PostgreSQL for local and deployed persistence. `pg` with numbered SQL migrations replaces the planned SQLite/Prisma option. See `PAYPAL_INTEGRATION.md` and `TEST_REPORT.md` for delivered and unverified behavior.
+
 ## 1. Stack (decided)
 
 | Layer | Choice | Note |

@@ -4,7 +4,7 @@
 
 A payment control layer for AI agents, built for the PayPal AI Hackathon 2026. An agent proposes a purchase. Deterministic policies decide, an AI risk model advises (and can only add caution), a human reviews when needed, and PayPal moves money only after a second, separate payer approval. Every step is written to a hash-chained ledger.
 
-**Status:** the frontend is complete and runs standalone in **mock mode** (no PayPal or AI calls; everything is labelled simulated). The real backend (PayPal Sandbox Orders v2, AI provider, database) is specified but not yet implemented.
+**Status:** frontend mock mode is preserved. The backend now implements PostgreSQL persistence, deterministic policies, server authorization, idempotency, audit chaining and a real PayPal Sandbox Orders v2 adapter. Automated tests use a fake payment provider. No real Sandbox payment or AI-provider assessment has been completed or verified.
 
 ```bash
 pnpm install
@@ -25,3 +25,15 @@ Mock passcodes: `reviewer` / `operator`. Use **Send test request** in the worksp
 | `docs/FRONTEND_HANDOFF.md` | How to connect the real backend without touching the UI |
 
 All people, companies and merchants in the demo are fictional.
+
+
+For the live backend, copy `.env.example` to `.env.local`, configure PostgreSQL and Sandbox account credentials, set `NEXT_PUBLIC_API_MODE=live`, run `pnpm db:migrate`, then `pnpm dev`. Full setup, limitations and the manual payment acceptance procedure are in [PAYPAL_INTEGRATION.md](docs/PAYPAL_INTEGRATION.md). Live sign-in requires `DEMO_MODE=true` and private `DEMO_PASSCODES`; mock passcodes apply only in mock mode.
+
+```bash
+pnpm test                       # fake-provider lifecycle, policy, API and adapter tests
+TEST_DATABASE_URL=postgresql://... pnpm test:postgres # disposable DB; creates an isolated test schema
+pnpm build:webpack              # fallback when the environment blocks Turbopack workers
+pnpm sandbox:verify pay_<id>    # real read-only verification after a manual Sandbox checkout
+```
+
+[Test evidence and untested behavior](docs/TEST_REPORT.md) are recorded separately. Backend source is under `src/server`; the existing UI continues through `GuardApi`. Migrations are numbered SQL under `migrations/`. Runtime payment code has no fake-provider environment switch.

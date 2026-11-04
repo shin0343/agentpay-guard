@@ -10,10 +10,15 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts",
+    "test:postgres": "APG_POSTGRES_TEST=true vitest run tests/postgres.test.ts",
+    "sandbox:verify": "tsx --env-file-if-exists=.env.local scripts/verify-sandbox.ts",
+    "build:webpack": "next build --webpack"
   },
   "dependencies": {
     "next": "16.4.5",
+    "pg": "^8.23.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "zod": "4.6.7"
@@ -21,11 +26,14 @@
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.4",
     "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "eslint": "^10.14.0",
     "eslint-config-next": "16.4.5",
+    "prettier": "^3.9.10",
     "tailwindcss": "4.3.4",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "vitest": "5.1.0"
   }

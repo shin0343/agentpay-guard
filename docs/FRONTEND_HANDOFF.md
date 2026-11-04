@@ -1,6 +1,6 @@
 # Frontend Handoff
 
-Status: frontend **complete in mock mode** (2026-11-03). Real backend, PayPal and AI are intentionally not implemented.
+Status: frontend **complete in mock mode** (2026-11-03). Backend foundation and Sandbox REST adapter are now implemented; see `PAYPAL_INTEGRATION.md` and `TEST_REPORT.md`. Real payer checkout and a real AI provider remain unverified. Existing frontend components are unchanged.
 Read first: `AGENTS.md` (binding rules), `DESIGN_SYSTEM.md` (constitution), `API_CONTRACT.md`, `PAYMENT_STATE_MACHINE.md`.
 
 ---
