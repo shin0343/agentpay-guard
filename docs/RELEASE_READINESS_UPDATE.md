@@ -1,5 +1,38 @@
 # Release readiness update
 
+## Current buyer-ready handoff — 2026-11-05T16:29:53.071Z
+
+Owner confirmed standalone Sandbox login now works. No credentials were requested.
+At 2026-11-05T16:29:38.982Z, existing public webhook POST reached the app (400 unsigned), same-app
+registration 12968018AN5251707 still matched https://magnificent-sword-adjustable-exchanges.trycloudflare.com/api/v1/webhooks/paypal. Four old stored
+payments had no capture IDs/attempts and current app event history was empty. Last
+old order GET returned 404 RESOURCE_NOT_FOUND; do not claim this as new capture
+absence evidence from PayPal itself. Its known last state was unapproved, internal
+approval had expired, and normal app GET applied EXPIRED/local VOIDED with original
+expiry retained. Historical records were not reset. Only ignored evidence archived.
+
+Created exactly one newly authorized actual USD 18.00 order …681133, request
+…KJ0N52, payment …SNQGZK. Real Meta muse-spark-1.3, score 5,
+2433 ms, all eight policy checks pass. Real owned provider GET verifies quote,
+USD amount, recipient and order/request references. Request/checkout key replays
+return the same resources; duplicate proposal BLOCKED; one fresh payment,
+86-event chain verified. Current PAYER_ACTION_REQUIRED / AWAITING_PAYER,
+zero capture attempts/IDs. Approval deadline **2026-11-05T16:59:52.140Z**
+(November 5, 2026 at 8:59:52 AM PST), unchanged 30-minute policy. Buyer receives the fresh URL and is
+asked to open it in the browser where Sandbox login just succeeded, then click
+Pay Now for USD 18.00 and confirm. No capture executed before that confirmation.
+
+Callback remains active for genuine delivery. After approval, independently GET
+provider and internal authorization, capture only while permitted through the
+existing backend (or verify already-captured return flow), then verify PayPal,
+DB/audit/frontend and terminal repeat. Inspect original signed receipt and genuine
+webhook event/resend/dedupe. No new automated suite was run in this docs-only
+handoff; prior 193 passing checks remain historical. **NOT READY until genuine
+capture/signed event are verified.** No source/design change, push or deployment.
+
+## Previous runs — superseded approval deadlines
+
+
 2026-11-05 UTC, continuation from 3c33648. **Verdict: NOT READY — waiting only for
 manual buyer approval before genuine capture/event acceptance can continue.**
 
