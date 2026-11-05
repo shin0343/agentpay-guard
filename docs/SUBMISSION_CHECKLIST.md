@@ -1,5 +1,7 @@
 # Submission checklist
 
+> Use [PUBLICATION_CHECKLIST.md](PUBLICATION_CHECKLIST.md) for the final Step 8 gates.
+
 Deadline: **Thursday 2026-11-12, 12:00 PM PST** (internal target: 2026-11-11 20:00 PST).
 Requirements quoted from https://paypalaihackathon.devpost.com/rules (read 2026-11-05).
 
@@ -14,12 +16,12 @@ Legend: ✅ done in the repo · ⏳ needs you · ⚠️ decision needed
 | Functional demo: setup and run instructions **or** hosted URL ("design mockup … does not meet this") | ✅ instructions | README "Run it": mock mode (no accounts) and live Sandbox mode |
 | Public GitHub/GitLab/Bitbucket repo with all source, assets and instructions | ⏳ | Repo is local only. Push when you approve |
 | Open-source license detectable in the repo About section | ✅ file / ⏳ visibility | `LICENSE` (MIT); GitHub detects it after push |
-| Video under 3 minutes | ✅ draft | `qa/step7-video/agentpay-guard-demo-draft.mp4` |
+| Video under 3 minutes | ✅ final, 158.867 s | `qa/step7-video/agentpay-guard-demo-final.mp4` |
 | Video public on YouTube, link on the form | ⏳ | Upload, then set visibility to Public |
-| No third-party trademarks or copyrighted music/material without permission | ✅ / ⚠️ | No music. Shows PayPal's official checkout button (sponsor's own SDK) and names Meta's model. Your call whether that needs mention |
+| No third-party trademarks or copyrighted music/material without permission | ⚠️ BLOCKED | Samantha public-sharing permission absent; replace/licence narration. No music source identified |
 | English materials | ✅ | All docs and narration |
-| Testing access free and unrestricted until judging ends (2026-12-15) | ✅ / ⚠️ | Mock mode needs nothing. Live mode needs the judge's own Sandbox app, or you share a revocable one privately |
-| "Include any test account credentials, API keys, or sandbox login details" | ⚠️ | Never in the repo. Optional: a separate, revocable Sandbox app in the Devpost private testing field |
+| Testing access free and unrestricted until judging ends (2026-12-15) | ✅ / ⚠️ | Mock mode needs nothing. Live mode uses the judge's own accounts or a restricted disposable judge instance |
+| Test account access | ⚠️ | Never publish privileged PayPal/AI keys or reusable live passcodes. Provide restricted judge-instance access privately if needed |
 | New project during the submission period (Oct 1 – Nov 12) | ✅ | First commit 2026-11-03 |
 
 ## Repository before going public
@@ -27,22 +29,22 @@ Legend: ✅ done in the repo · ⏳ needs you · ⚠️ decision needed
 - [x] `LICENSE` (MIT) and `"license": "MIT"` in `package.json`
 - [x] README: purpose, evidence, setup (mock + live), env example, Sandbox accounts, AI provider, database, scenarios, tests, troubleshooting, limitations
 - [x] `docs/ARCHITECTURE.md`
-- [x] `.env.example` contains no values; `.env*` and `qa/` are git-ignored
+- [x] `.env.example` contains no private values; `.env*` except that template and `qa/` are git-ignored
 - [x] Secret scan: PayPal client ID/secret, Meta key, session secret, agent key and both passcodes have **zero** matches in the working tree and in every commit
 - [x] No raw webhook receipts or payer data tracked (they live only in ignored `qa/`)
 - [x] Clean-copy check: tracked files only, no `.env.local` → `pnpm install --frozen-lockfile` and mock build pass
-- [ ] ⚠️ Commit author email `shin0343@mail.hongik.ac.kr` becomes public with the history. Keep it, or rewrite authorship before the first push
+- [ ] ⚠️ Commit author email (academic address; see `FINAL_RELEASE_REPORT.md`) becomes public with the history. Decide whether to publish it; no rewrite without explicit authorization
 - [ ] ⏳ Create the GitHub repo, push `main`, add description and topics from `docs/DEVPOST_SUBMISSION.md`
 - [ ] ⏳ Confirm the About panel shows "MIT license"
 
 ## Video
 
-- [x] Draft rendered: 1920×1080, H.264/AAC, under 3:00, captions file alongside
+- [x] Final rendered: 1920×1080, 30 fps H.264/AAC, 158.867 s, 45 captions alongside
 - [x] Only real application footage and two plain title cards; no stock footage, no music
 - [x] Payment labelled as PayPal Sandbox; "not a production deployment" on the closing card
 - [x] No passcodes, keys, emails or payer data on screen (passcode fields are masked)
 - [ ] ⏳ Watch it once end to end yourself
-- [ ] ⚠️ Keep the synthetic voice (macOS "Samantha") or record your own voice from `docs/DEMO_NARRATION.md`
+- [ ] ⚠️ Replace Samantha with own/rights-cleared narration; follow `docs/AUDIO_REPLACEMENT.md` before public upload
 - [ ] ⏳ Upload to YouTube (Public), paste the description from `docs/DEVPOST_SUBMISSION.md`, add the `.srt` captions
 
 ## Devpost form
@@ -60,3 +62,7 @@ Legend: ✅ done in the repo · ⏳ needs you · ⚠️ decision needed
 1. Start PostgreSQL and the app with `.env.local`. Sign in as operator **before** checkout.
 2. Webhooks need a new HTTPS tunnel; follow `docs/WEBHOOK_VERIFICATION.md` "Reproduction". Do not reuse the stopped URL.
 3. Never show `.env.local`, terminal history with keys, or PayPal account pages with personal data on screen.
+
+Final chapters: 0:00 Problem · 0:10 Product · 0:25 Low-risk · 0:52 Human review · 1:09 Approval ·
+1:26 Injection block · 1:47 Sandbox payment · 2:09 Webhooks & ledger · 2:32 Close.
+All three continuity defects are resolved. Current publication blocker: narration redistribution rights.

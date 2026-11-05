@@ -1,5 +1,8 @@
 # Demo verification
 
+> Historical stage snapshot. For the current publication verdict and measured results, see
+> [Step 8 final release report](FINAL_RELEASE_REPORT.md). Earlier counts/verdicts below describe their original run.
+
 ## What is implemented versus verified
 
 | Layer | Implementation | Evidence in this task |

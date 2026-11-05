@@ -2,7 +2,9 @@
 
 AgentPay Guard is one Next.js 16 application: the App Router serves the operator UI, and a single
 route handler (`src/app/api/v1/[[...path]]/route.ts`) serves the versioned API. PostgreSQL holds all
-state. PayPal Orders v2 and the Meta Model API are the only external services.
+state. Payment uses PayPal Orders v2; advisory AI uses the explicitly selected Meta Model API or
+optional OpenAI provider. Fixture/unavailable risk modes make no AI service call. Clean builds also
+download Google Fonts; browser checkout loads the official PayPal SDK.
 
 ## Request lifecycle
 

@@ -10,7 +10,10 @@ written to an append-only, hash-chained ledger.
 
 **Status:** working Sandbox prototype, verified end to end on 2026-11-05 with real Meta inference,
 a real PayPal Sandbox capture and genuine signed webhooks. Not deployed to production.
-No real money is used anywhere.
+No real money is used. The final publication audit is in [FINAL_RELEASE_REPORT.md](docs/FINAL_RELEASE_REPORT.md);
+older verification documents record earlier stages and their historical test counts.
+The selected final video passes continuity and technical QA; its Samantha narration still needs
+rights-cleared replacement before public upload. See [audio replacement instructions](docs/AUDIO_REPLACEMENT.md).
 
 ![Paid request with both approval keys](docs/screenshots/step7-desktop-paid.png)
 
@@ -21,7 +24,7 @@ No real money is used anywhere.
 | Can the agent spend within limits on its own? | Eight deterministic rules check amount, daily budget, category, merchant allowlist, currency, agent scope, duplicates and velocity. Prices come from a trusted server catalog, not from the agent. |
 | What does the AI do? | Meta `muse-spark-1.3` reads the untrusted request and returns a structured risk assessment with grounded evidence. It can escalate *Allowed* to *Needs review*. It can never loosen a rule. |
 | Where does a person step in? | Over-limit or unknown-merchant requests wait for a reviewer. The approval is bound to the request version (`If-Match`) and a reviewer cannot approve their own agent. |
-| What if the agent is manipulated? | Prompt-injected or out-of-policy requests are blocked before any PayPal call. The trace shows the injected text and `PayPal calls 0`. |
+| What if the agent is manipulated? | In the demonstrated gift-card attack, hard spending rules block the request before any PayPal call. Instruction screening and AI can also require review; this is not a guarantee against every injection. |
 | Can it pay twice? | Idempotency keys replay retries, a duplicate guard blocks repeat purchases, and capture uses a deterministic `PayPal-Request-Id` plus database uniqueness. |
 | How do we know money moved? | *Paid* appears only after PayPal confirms a `COMPLETED` capture that matches the stored order, amount and recipient. Signed webhooks are verified with PayPal before they are processed. |
 
@@ -34,7 +37,7 @@ No real money is used anywhere.
 | Signed webhooks | `CHECKOUT.ORDER.APPROVED` and `PAYMENT.CAPTURE.COMPLETED`, each delivered, verified by PayPal postback, redelivered and deduplicated |
 | Duplicate safety | Repeated capture returned the same capture ID: one attempt, one provider capture |
 | Ledger | 106-event hash chain verified after acceptance |
-| Tests | 193 automated tests, including six against real PostgreSQL |
+| Step 8 regression tests | 198 passed, including six against real PostgreSQL; without PostgreSQL opt-in, 192 passed and six skipped |
 
 Details and limitations: [Sandbox evidence](docs/SANDBOX_TRANSACTION_EVIDENCE.md) ·
 [webhook verification](docs/WEBHOOK_VERIFICATION.md) · [release readiness](docs/RELEASE_READINESS_UPDATE.md).
@@ -43,7 +46,8 @@ or a measure of fraud-detection accuracy.
 
 ## Run it
 
-Requirements: Node.js 22+ (tested on 24), pnpm 10+, and, for live mode, PostgreSQL 15+.
+Requirements: Node.js 22+ (Step 8 tested on 22.15.1), pnpm 10.32.1, and, for live mode, PostgreSQL 15+.
+Initial installation and builds need internet access, including Google Fonts downloads.
 
 ### Option 1 — Offline mock mode (no accounts, about two minutes)
 
@@ -51,7 +55,7 @@ Everything runs in the browser with simulated data. No PayPal or AI calls are ma
 labels every simulated result (`[MOCK]`, `[SIMULATED]`).
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 NEXT_PUBLIC_API_MODE=mock pnpm build:webpack
 NEXT_PUBLIC_API_MODE=mock pnpm start
 ```
@@ -73,7 +77,7 @@ Open http://localhost:3000, choose **Open the workspace**, sign in with `operato
    ```bash
    NEXT_PUBLIC_API_MODE=live
    APP_URL=http://localhost:3000
-   DATABASE_URL=postgresql://localhost:5432/agentpay_guard
+   DATABASE_URL=postgresql://<your-db-user>@localhost:5432/agentpay_guard
    SESSION_SECRET=$(openssl rand -hex 32)          # paste the value
    DEMO_MODE=true
    DEMO_PASSCODES=operator:<private-1>,reviewer:<private-2>
@@ -88,6 +92,8 @@ Open http://localhost:3000, choose **Open the workspace**, sign in with `operato
    pnpm db:migrate
    pnpm build:webpack && pnpm start
    ```
+   Replace the angle-bracket placeholders with your own values. Generate secrets in a terminal and
+   paste the resulting values: `.env.local` does not execute `$(...)`. Keep this file private.
 5. Sign in at `/login` with the operator passcode **before** opening PayPal checkout. Run
    scenario A, choose **Continue to PayPal**, and approve as the Sandbox *personal* payer.
    Confirm the result with `pnpm sandbox:verify pay_<id>` (a read-only PayPal GET).
@@ -95,7 +101,15 @@ Open http://localhost:3000, choose **Open the workspace**, sign in with `operato
 **AI provider.** `RISK_PROVIDER=fixture` gives deterministic, clearly labelled *simulated* assessments
 (it requires `DEMO_MODE=true`). For genuine inference set `RISK_PROVIDER=meta`, `MODEL_API_KEY`
 and `META_RISK_MODEL=muse-spark-1.3`, or `RISK_PROVIDER=openai` with `OPENAI_API_KEY`. If the provider
-is missing or fails, requests that policy allows go to human review instead.
+is missing or fails, requests that policy allows go to human review instead. Obtain your own Meta key
+through the [Meta developer quickstart](https://dev.meta.ai/docs/quickstart), subject to account/model access.
+No provider key is included. See [Meta setup](docs/META_MODEL_API_INTEGRATION.md).
+
+The offline mock is a functioning simulated application. It does not prove real AI or PayPal access.
+The live backend uses the real PayPal adapter even with fixture AI. Judges can configure their own Sandbox
+and AI accounts; no developer-owned account is required. If special AI access prevents free testing,
+arrange a separate, restricted disposable demo and provide its access privately through Devpost.
+Never publish shared live passcodes or privileged payment/AI credentials.
 
 **Webhooks (optional).** Without a public HTTPS URL the app confirms payments by reading the order
 from PayPal (protected reconciliation). To test webhooks, expose `/api/v1/webhooks/paypal` over HTTPS,
@@ -105,10 +119,15 @@ register it for your Sandbox app and set `PAYPAL_WEBHOOK_ID`. See
 ### Tests and checks
 
 ```bash
-pnpm typecheck && pnpm lint && pnpm test   # 193 tests; PostgreSQL suite opt-in below
+pnpm typecheck && pnpm lint && pnpm test   # 192 passed, six PostgreSQL tests skipped
 APG_POSTGRES_TEST=true TEST_DATABASE_URL=postgresql://localhost:5432/agentpay_guard_test pnpm test
 pnpm build:webpack
 ```
+
+The full PostgreSQL-enabled suite passes 198 tests. `pnpm test:postgres` selects only
+`tests/postgres.test.ts`; use the full command above to include `tests/security-postgres.test.ts` too.
+Browser QA commands and their controlled-provider boundaries are in
+[FINAL_SUBMISSION_VERIFICATION.md](docs/FINAL_SUBMISSION_VERIFICATION.md).
 
 ## Demo scenarios
 
@@ -155,6 +174,9 @@ More: [ARCHITECTURE.md](docs/ARCHITECTURE.md), [API contract](docs/API_CONTRACT.
   controlled tests, not by a live Sandbox run.
 - The AI result is advisory and its accuracy is not measured. It never authorizes a payment.
 - No refunds, disputes, payouts or production deployment.
+- The audit chain detects modification against a trusted head; it does not protect against a database
+  administrator replacing both the full chain and its head.
+- One moderate development-only ESLint/minimatch advisory remains; see the final release report.
 
 ## Troubleshooting
 
@@ -174,4 +196,6 @@ More: [ARCHITECTURE.md](docs/ARCHITECTURE.md), [API contract](docs/API_CONTRACT.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Dependencies and fonts retain their own licenses; see
+[third-party notices](docs/THIRD_PARTY_NOTICES.md). Publication steps and gates are in
+[PUBLICATION_CHECKLIST.md](docs/PUBLICATION_CHECKLIST.md).

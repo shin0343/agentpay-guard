@@ -2,7 +2,7 @@
 
 2026-11-05 · Claude Opus 5.5 · from Step 7 commit `0f3af1d` on `feat/frontend`
 
-**Verdict: PASS — review-ready.** `qa/step7-video/agentpay-guard-demo-final.mp4` (git-ignored, 14.5 MB),
+**Technical/visual verdict: PASS — review-ready. Publication BLOCKED by narration licensing.** `qa/step7-video/agentpay-guard-demo-final.mp4` (git-ignored, 16,421,764 bytes),
 captions `qa/step7-video/agentpay-guard-demo-final.srt`. The draft (`…-draft.mp4`/`.srt`) is unchanged
 (checksum verified before and after).
 
@@ -48,7 +48,7 @@ than a timed-out one, and labels its time.
 | Check | Result |
 |---|---|
 | Duration | **158.87 s (2:38.9)**, under 3:00 |
-| Video | H.264, **1920×1080**, 30 fps, 4,766 frames = duration × 30 (no dropped or duplicated frames from encoding) |
+| Video | H.264, **1920×1080**, 30 fps, 4,766 frames, consistent with duration × 30; this does not prove each frame is unique |
 | Audio | AAC 48 kHz stereo, one continuous track, integrated **−16.1 LUFS** |
 | Black frames | None |
 | Silence > 1.5 s | 50.7–52.2 (scene change), 71.5–74.5 (reviewer typing), 83.6–86.2 (scene change), 157.3–end (fade) |
@@ -76,8 +76,9 @@ scene, and full-resolution frames of the dated captions in scenes 7 and 8.
 
 The macOS "Samantha" voice is intelligible and even (Whisper recovers every word), with clear pronunciation
 of product terms. It is recognizably synthetic. All installed English voices are the same default quality;
-no premium voice is installed, and no paid service or cloned voice was used. Recommendation: acceptable for
-submission; a human read of `docs/DEMO_NARRATION.md` would sound warmer.
+no premium voice is installed, and no paid service or cloned voice was used. Intelligibility does not establish redistribution rights. The current Samantha narration is not cleared
+for public sharing; replace it with your own recording or demonstrably permitted audio. See
+[AUDIO_REPLACEMENT.md](AUDIO_REPLACEMENT.md).
 
 ## 6. Secrets and misleading content
 
@@ -94,8 +95,10 @@ submission; a human read of `docs/DEMO_NARRATION.md` would sound warmer.
 ## 8. Remaining limitations and manual review
 
 - Watch the final once end to end with sound; judge the synthetic voice yourself.
-- Docs owned by the parallel Step 8 work (`SUBMISSION_CHECKLIST.md`, `FINAL_RELEASE_REPORT.md`,
-  `STEP7_COMPLETION_REPORT.md`, `DEVPOST_SUBMISSION.md`) still reference the draft file or draft chapter times;
-  point them at `agentpay-guard-demo-final.mp4` and the chapters above.
+- Parallel Step 8 documents are reconciled with this final artifact and current chapter times.
 - Scenario E (decline and recovery) is intentionally not in the video.
 - Not uploaded to YouTube; not submitted.
+
+Independent Codex rerun: 158.867 s, 45 cues, no black runs, −16.1 LUFS; cached offline Whisper
+matched 45/45 cue onsets (mean −0.20 s, max 0.59 s). All three repaired scene starts were visually
+confirmed. Public audio rights remain unresolved.

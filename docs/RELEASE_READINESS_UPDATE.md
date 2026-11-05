@@ -1,5 +1,8 @@
 # Release readiness update
 
+> Historical stage snapshot. For the current publication verdict and measured results, see
+> [Step 8 final release report](FINAL_RELEASE_REPORT.md). Earlier counts/verdicts below describe their original run.
+
 2026-11-05 UTC. **Final verdict: READY WITH DISCLOSED LIMITATIONS.**
 Scope: controlled local PayPal Sandbox hackathon product verification. This does
 not authorize production deployment or certify production financial operations.

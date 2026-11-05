@@ -8,3 +8,26 @@ next-env.d.ts
 !.env.example
 .DS_Store
 qa/
+
+# Local evidence, recordings, database dumps and credentials. Keep sanitized docs/screenshots.
+*.mp4
+*.mov
+*.webm
+*.wav
+*.aiff
+*.mp3
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.backup
+*.log
+*.pem
+*.key
+*.p12
+*.pfx
+.pnpm-store/
+playwright-report/
+test-results/
+__pycache__/
+*.pyc

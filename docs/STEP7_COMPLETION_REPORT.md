@@ -1,5 +1,8 @@
 # Step 7 completion report
 
+> Historical stage snapshot. For the current publication verdict and measured results, see
+> [Step 8 final release report](FINAL_RELEASE_REPORT.md). Earlier counts/verdicts below describe their original run.
+
 2026-11-05 · Claude Opus 5.5 · baseline `cd4030e` on `feat/frontend`
 The commit containing this report is named in the agent's completion message (`git log -1`).
 
@@ -33,22 +36,13 @@ New tests: `tests/copy-presentation.test.ts` (5 tests).
 
 ## 3. Demo video
 
-**Draft produced: `qa/step7-video/agentpay-guard-demo-draft.mp4`** (git-ignored, 16 MB).
-1920×1080, H.264 30 fps, AAC 48 kHz, **2:35**, integrated loudness −16.2 LUFS. Captions:
-`qa/step7-video/agentpay-guard-demo-draft.srt`. Watched as frame sheets every 5 s plus full-resolution spot checks.
-
-- Footage is the real app on `apg_step7_video` (fresh clone of the evidence DB). Fresh requests went through the
-  real agent API and scenario runner with genuine Meta inference: A score 8 (Allowed), B score 65 (review, then
-  reviewer approval), C score 95 with the injection quoted (Blocked, PayPal calls 0), D replay and duplicate block.
-- The payment segment shows the genuine 2026-11-05 Sandbox capture, captioned with its date.
-- Narration: macOS "Samantha" TTS. Replace it with a human voice if possible (script and re-assembly steps in
-  [DEMO_NARRATION.md](DEMO_NARRATION.md) and [SHOT_LIST.md](SHOT_LIST.md)).
-- Known blemishes: segments 04 and 08 open for about 2 s on whichever request the queue auto-selects before the
-  scenario sheet opens. The transitions are hard cuts.
-- Tooling committed in `scripts/demo/` (recorder, assembler, title cards, narration text).
-- The first take of C timed out at Meta's 8-second deadline (rules still blocked it, AI marked unavailable); it was
-  re-shot so the narration stays true. The first full assembly also had a frame-timing bug (image timestamps
-  quantized to 1/25 s); the encoder was rewritten and every segment re-recorded.
+**Final produced in Step 7.1:** `qa/step7-video/agentpay-guard-demo-final.mp4` and matching `.srt`.
+158.867 s, 1920×1080, H.264 30 fps/AAC 48 kHz, 45 English cues. All three scene continuity defects
+from the original draft are corrected. See [VIDEO_FINAL_QA.md](VIDEO_FINAL_QA.md) and the independent
+[final release report](FINAL_RELEASE_REPORT.md) for hashes, technical sync, evidence labels and checks.
+Original draft retained locally. Real Meta inference, human review and the earlier November 5 USD 18.00
+Sandbox capture remain accurately separated. **Samantha public redistribution is not cleared**;
+follow [AUDIO_REPLACEMENT.md](AUDIO_REPLACEMENT.md) before publication.
 
 ## 4. Devpost materials
 
@@ -89,11 +83,11 @@ None in the repository. Publishing steps need your authorization (below). Disclo
 
 ## 8. Commit
 
-See the completion message. Branch `feat/frontend`; `main` is 17 commits behind and fast-forwardable.
+See the completion message. Branch `feat/frontend`; `main` remains fast-forwardable; the reconciliation report gives current ancestry.
 
 ## 9. Manual actions before submission
 
-1. Watch the draft video end to end. Decide whether to keep the TTS voice or re-record narration.
+1. Replace/license narration, then watch the rights-cleared final end to end.
 2. Decide on the commit author email before the first public push (keep, or rewrite history).
 3. Fast-forward `main` to `feat/frontend`, create the public GitHub repo, push, set description and topics,
    and confirm the About panel shows MIT.

@@ -1,5 +1,8 @@
 # Step 7 handoff — Claude Opus 5.5
 
+> Historical stage snapshot. For the current publication verdict and measured results, see
+> [Step 8 final release report](FINAL_RELEASE_REPORT.md). Earlier counts/verdicts below describe their original run.
+
 **READY WITH DISCLOSED LIMITATIONS. Recommend proceeding to Step 7.**
 Step 7 has not been started. Verified product implementation commit:
 **9ddace48c0b055934426063c86b75dc3cc5602ef**; later commits update evidence only. Final evidence-commit hash is

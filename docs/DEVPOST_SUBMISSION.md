@@ -1,8 +1,9 @@
 # Devpost submission — AgentPay Guard
 
 Copy-ready English text for https://paypalaihackathon.devpost.com. Fields marked **[YOU]** need your input.
-Every claim below is backed by `docs/SANDBOX_TRANSACTION_EVIDENCE.md`, `docs/WEBHOOK_VERIFICATION.md`
-or the code. Do not add accuracy, fraud-reduction or production claims.
+Technical claims refer to `docs/SANDBOX_TRANSACTION_EVIDENCE.md`, `docs/WEBHOOK_VERIFICATION.md`
+and the Step 8 checks in `docs/FINAL_RELEASE_REPORT.md`. Resolve that report's publication gates
+before using this copy. Do not add accuracy, fraud-reduction or production claims.
 
 ---
 
@@ -18,19 +19,22 @@ Payment guardrails for AI agents: rules decide, Meta AI advises, people approve,
 
 Best Use of Agentic Commerce · Best Use of PayPal + AI (plus the Grand Prizes, which every eligible submission enters)
 
+These are relevant award categories, not an eligibility guarantee. No AG Grid, APIMatic,
+Bryntum, Channel3 or Render sponsor-prize claim is made: those tools/services are not demonstrated.
+
 ---
 
 ## About the project (main description)
 
 ### Inspiration
 
-AI agents can now browse, compare and buy. The missing piece is not another way to pay. It is a way to
-say *no*, to ask a person, and to prove afterwards what happened. Today an agent with a card number has
-either too much power or none. We wanted a middle ground that a finance team could actually accept.
+When a developer delegates API-credit or GPU purchases to an agent, they still need spending limits,
+review for exceptions, and evidence of what was paid. We built a Sandbox prototype of that workflow,
+with a separate payer approval for every purchase.
 
 ### The problem
 
-When an agent spends money, three questions have no good answer yet:
+An operator reviewing agent purchases needs to answer three questions:
 
 1. **Who set the limits, and were they enforced?** A model prompt is not a control.
 2. **Who approved this purchase?** "The agent decided" is not an audit answer.
@@ -59,9 +63,10 @@ We call this the **two-key model**: Key 1 is policy approval (rules, or a review
 
 ### How it's different from a payment chatbot
 
-A chatbot asks a model whether to pay. AgentPay Guard never lets the model decide. The model's output is
-schema-validated advice. Deterministic code makes the decision, PayPal holds the second key, and the database
-enforces uniqueness. In our demo a prompt-injected request tells "the reviewing system" to ignore spending
+The purchase API, trusted quote, rule trace, version-bound review and payment evidence are the product's
+control surface. Model output is schema-validated advice. Deterministic code enforces policy,
+PayPal holds the second key, and the database enforces uniqueness. In our demo a prompt-injected request
+tells "the reviewing system" to ignore spending
 limits. The model flags the injection, the rules block the request, and the trace shows **PayPal calls: 0**.
 
 ### How we built it
@@ -120,7 +125,7 @@ by PayPal's postback, redelivered through PayPal's resend API and deduplicated. 
 - A real end-to-end Sandbox payment: agent API → rules → Meta inference → payer approval → guarded capture →
   signed webhooks → ledger, with matching state in PayPal, PostgreSQL and the UI.
 - Exactly one capture despite repeated capture requests and genuine webhook redeliveries.
-- 193 automated tests, including concurrency and restart tests against real PostgreSQL.
+- 198 automated tests passed in Step 8, including six concurrency, persistence and recovery tests against real PostgreSQL.
 - An interface where the most important states (Allowed, Needs review, Blocked, Paid, Not paid) read in one glance.
 
 ### What we learned
@@ -141,7 +146,8 @@ plain language, but every decision that moves money has to be deterministic, att
 Sandbox only, not deployed to production. One Sandbox business account receives all payments; merchants are
 fictional labels. Demo sign-in uses shared passcodes. Natural funding declines, provider-held `PENDING` and
 network ambiguity are covered by controlled tests, not by a live run. The AI score is advisory and its accuracy
-is not measured.
+is not measured. The hash chain is checked against its recorded head; a privileged administrator who
+replaces the whole ledger and head is outside that protection. No fraud prevention guarantee or compliance certification is claimed.
 
 ---
 
@@ -157,7 +163,7 @@ meta-model-api · muse-spark · zod · tailwindcss · vitest · playwright
 
 ## Testing instructions (for judges)
 
-1. Fastest: offline mock mode, no accounts. `pnpm install`, then
+1. Fastest: offline mock mode, no accounts. `pnpm install --frozen-lockfile`, then
    `NEXT_PUBLIC_API_MODE=mock pnpm build:webpack && NEXT_PUBLIC_API_MODE=mock pnpm start`.
    Open http://localhost:3000, sign in with `operator` or `reviewer`, use **Send test request** for scenarios A–E.
    Every result is labelled simulated.
@@ -165,9 +171,11 @@ meta-model-api · muse-spark · zod · tailwindcss · vitest · playwright
    personal buyer. `RISK_PROVIDER=fixture` needs no AI key; `RISK_PROVIDER=meta` uses your Meta Model API key.
 3. Recorded evidence of our own Sandbox run is in `docs/SANDBOX_TRANSACTION_EVIDENCE.md`.
 
-**[YOU]** Optional: if you want judges to test against *your* Sandbox app without setting one up, put a separate,
-revocable Sandbox app's credentials in the Devpost private testing field (never in the repository), and rotate
-them after judging.
+Judges can create their own Sandbox app/business merchant and separate personal buyer using the README.
+Meta requires their own model access and server-only key; fixture AI is explicitly simulated. If special
+account access prevents testing, provide a restricted disposable test instance with separate credentials
+through Devpost's private testing field. Do not share privileged PayPal/AI keys or publish reusable live
+passcodes. Keep any judge instance isolated, limit its usage, and revoke its access after judging.
 
 ## Project significantly updated during the submission period?
 
@@ -178,16 +186,21 @@ Created from scratch during the submission period. First commit: 2026-11-03.
 > AgentPay Guard is a payment control layer for AI agents, built for the PayPal AI Hackathon 2026.
 > An agent proposes a purchase; deterministic policies decide; Meta's muse-spark-1.3 adds advisory risk
 > analysis that can only add caution; a named reviewer approves when needed; and PayPal captures only after
-> a separate payer approval. Everything shown is the real application. The payment is a genuine PayPal
-> **Sandbox** transaction (USD 18.00, capture 32E66103YN1557633). No real money moved, and the product is
+> a separate payer approval. Application footage shows the running product; opening/closing title cards
+> provide context. The payment screen shows an earlier genuine PayPal **Sandbox** transaction from
+> November 5, 2026 (USD 18.00, capture 32E66103YN1557633), separate from the new unpaid proposals.
+> No real money moved, and the product is
 > not deployed to production. Merchants and agents are fictional.
 >
-> 0:00 Problem · 0:11 Product · 0:26 Low-risk request · 0:52 Human review · 1:27 Prompt-injection block ·
-> 1:48 Verified Sandbox payment · 2:07 Retries, signed webhooks, ledger · 2:28 Close
+> 0:00 Problem · 0:10 Product · 0:25 Low-risk · 0:52 Human review · 1:09 Approval ·
+> 1:26 Injection block · 1:47 Sandbox payment · 2:09 Webhooks & ledger · 2:32 Close
 >
 > Code: <GitHub URL>
 
-(Chapter times are from draft 1; update them if the video is re-cut.)
+These chapters describe `qa/step7-video/agentpay-guard-demo-final.mp4` (158.867 s), with 45 English
+cues in its matching SRT. All continuity defects are resolved. **Do not upload the current Samantha
+narration until replaced or separately licensed for public sharing.** See `AUDIO_REPLACEMENT.md`.
+Recheck chapters and captions after replacement.
 
 ## GitHub repository
 

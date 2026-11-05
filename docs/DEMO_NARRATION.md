@@ -30,6 +30,8 @@ Never describe the November 5 capture as happening during the recorded session.
 
 ## Re-recording with a human voice
 
-Record each line as `01-intro.wav` … `09-close.wav` (48 kHz) into the work directory's `narr/` folder, update
-`timing.json` sentence starts (or run `narrate.py` once and replace the WAVs with takes of similar length),
-then run `assemble-demo.py` and `check-video.py`.
+**Publication blocker:** Samantha system-voice audio is not cleared for public sharing. A locally
+installed voice is not evidence of redistribution permission. Preserve the current final MP4/SRT.
+Use [AUDIO_REPLACEMENT.md](AUDIO_REPLACEMENT.md) and the clean
+[recording script](NARRATION_RECORDING_SCRIPT.md). Replacing WAV files of similar length without
+retiming sentence cues is insufficient to establish synchronization.
