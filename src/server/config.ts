@@ -1,4 +1,30 @@
 import { z } from "zod";
+const riskSettings = z.object({
+  RISK_PROVIDER: z
+    .enum(["meta", "openai", "fixture", "unavailable"])
+    .default("unavailable"),
+  MODEL_API_KEY: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().min(1).optional(),
+  ),
+  META_RISK_MODEL: z.literal("muse-spark-1.3").optional(),
+  OPENAI_API_KEY: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().min(1).optional(),
+  ),
+  OPENAI_RISK_MODEL: z
+    .string()
+    .regex(/^[A-Za-z0-9._:-]{1,120}$/)
+    .default("gpt-4o-mini-2024-07-18"),
+});
+
+/** Provider-only tools need no payment credentials; application startup remains strict. */
+export function riskConfig(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return riskSettings.parse(env);
+}
+
 export function config(env: Record<string, string | undefined> = process.env) {
   const cfg = z
     .object({
@@ -15,17 +41,7 @@ export function config(env: Record<string, string | undefined> = process.env) {
       DEMO_MODE: z.enum(["true", "false"]).default("false"),
       DEMO_PASSCODES: z.string().default(""),
       DEMO_AGENT_KEY: z.string().optional(),
-      RISK_PROVIDER: z
-        .enum(["openai", "fixture", "unavailable"])
-        .default("unavailable"),
-      OPENAI_API_KEY: z.preprocess(
-        (v) => (v === "" ? undefined : v),
-        z.string().min(1).optional(),
-      ),
-      OPENAI_RISK_MODEL: z
-        .string()
-        .regex(/^[A-Za-z0-9._:-]{1,120}$/)
-        .default("gpt-4o-mini-2024-07-18"),
+      ...riskSettings.shape,
       TRUST_PROXY: z.enum(["true", "false"]).default("false"),
     })
     .parse(env);

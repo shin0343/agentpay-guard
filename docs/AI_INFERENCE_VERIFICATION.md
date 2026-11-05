@@ -1,8 +1,79 @@
 # AI inference verification
 
-2026-11-04 local / 2026-11-05 UTC · **Actual inference: NOT VERIFIED.**
+Latest: 2026-11-05 UTC / 2026-11-04 local · **Actual Meta inference VERIFIED.**
+Baseline `19cd3a7`. Overall release remains NOT READY because payment acceptance
+is incomplete. The current provider is Meta Model API, Standard `muse-spark-1.3`.
 
-## Observed results
+## Current genuine AI evidence
+
+| Required case | Actual observation | Verification |
+|---|---|---|
+| Normal within limits | Completed, score 5/low, ALLOWED | Genuine Meta + existing service/policy + PostgreSQL |
+| Unusual / review | Completed, score 65/medium, IN_REVIEW | Actual limit/merchant/history signals; reviewer still required |
+| Hard policy block | Completed, score 95/high, BLOCKED | Deterministic policy retained authority; no PayPal call |
+| Description prompt injection | Completed, score 82/high, IN_REVIEW | Model itself returned prompt_injection; independent screen also retained |
+| Invalid model output | Genuine pre-fix output used noncanonical evidence paths; rejected as INVALID_EVIDENCE | Fail-closed behavior observed; Meta wire schema corrected without weakening shared validation |
+| Timeout/network failure | Three actual requests hit eight-second timeout and remained review/blocked; network exceptions additionally tested with controlled transport | No failure could auto-authorize payment |
+
+The four final completions ran at `04:52:12Z`–`04:52:28Z` with returned model
+`muse-spark-1.3`, prompt `r-3-meta-1`, validated response IDs and single attempts.
+Latencies were 2,457/4,758/6,734/4,257 ms. Request suffixes:
+M5GB1F/MQZW7C/VAB1SD/XAC2JX; response suffixes:
+474f26/e749d3/dd4aa6/f843e1. These are sanitized actual identifiers, not fixtures.
+
+An additional real `risk:verify` completed at `04:54:40Z`, score 5, response suffix
+2646a7, exit 0, with persisted decision unchanged. The final database contained
+zero payments and a verified 21-event audit chain. Proposal duplication was blocked.
+The verifier excludes PayPal via a deny-only boundary and does not exercise the
+full authenticated runtime; no successful payment response was simulated there.
+
+Earlier runs are retained separately: a 128-token connectivity probe returned
+HTTP 200 but incomplete output; the first risk run had three actual timeouts;
+shorter reasoning exposed rejected evidence paths. Those are failed/fallback
+observations, not passing inference. Diagnosis showed paths such as
+`untrusted_purchase.merchant.name`, outside the canonical field set. The final
+schema enumerates valid text paths and enforces null evidence/source pairing for
+context facts. Grounding, safe-summary and cross-field checks remain unchanged.
+
+Malformed JSON, unexpected authorization fields, refusal/tool/incomplete output,
+model mismatch, network exceptions and streaming-body deadlines also pass controlled
+regressions. Deliberately malformed genuine JSON was not elicited from the vendor;
+the genuine invalid evidence case above and mocked malformed-output cases are distinct.
+Scores are subjective triage examples, not measured fraud probabilities/accuracy.
+
+## Current UI and configuration
+
+The unchanged frontend rendered the four saved genuine evaluations at desktop and
+mobile widths: 8 checks, 12 screenshots, zero runtime errors or horizontal overflow.
+Model, score and summary matched saved records, simulated-AI labels were absent,
+and Paid was absent. This test intercepts GET display responses with the actual
+GuardService-projected PostgreSQL records; screenshots label the boundary. It is
+not proof of the complete live runtime, which still requires PayPal configuration.
+
+The first temporary display selectors expected standalone model/score text. They
+were corrected to the existing formatted metadata line and `score / 100`. Visual
+inspection also caught missing list-envelope fields in that driver; those were
+fixed, with ledger/no-inline-contract-error assertions added. No application/UI
+source change was made. Existing full backend/browser regression tests separately
+use explicit fixtures and intercepted payment/SDK responses.
+
+Private `.env.local` now selects Meta explicitly. MODEL_API_KEY is passed directly
+to the adapter; no OPENAI_API_KEY is needed for Meta. Missing local DB/session/demo
+settings were privately completed. Keys are ignored, owner-readable and never
+printed. `pnpm risk:verify` now supports the selected real provider independently
+of payment credentials. Exact probe commands, fixes, schema and evidence details:
+[META_MODEL_API_INTEGRATION.md](META_MODEL_API_INTEGRATION.md).
+
+Representative recorded-data views are in [screenshots/README.md](screenshots/README.md).
+No actual-model output has been substituted with a simulated score.
+
+## Historical Step 6.5 evidence (03:41–04:02 UTC)
+
+The following describes the earlier missing-OpenAI-key investigation, retained for
+history. Its zero-inference counts and legacy OpenAI procedure do not describe the
+current, verified Meta integration.
+
+### Observed results
 
 No OPENAI_API_KEY was available. RISK_PROVIDER was initially unset; the verification
 app was explicitly started with `openai` and no key to exercise the genuine runtime's
@@ -26,7 +97,7 @@ this snapshot and the Responses `text.format` schema mechanism; account access,
 latency and actual semantic results still require authenticated inference.
 [Official OpenAI documentation](https://developers.openai.com/api/docs/guides/structured-outputs#structured-outputs-vs-json-mode).
 
-## Actual missing-key path and targeted fix
+### Actual missing-key path and targeted fix
 
 The pre-fix run completed at `2026-11-05T03:48:04.468Z`: policy passed, IN_REVIEW,
 checkout denied before review (409), missing CSRF denied (403), agent checkout
@@ -58,7 +129,7 @@ copy test or model dependency was added. Schema, invalid evidence, injection,
 late responses, deadlines and deterministic BLOCK priority pass with controlled
 providers. Model semantic accuracy is not inferred from these tests.
 
-## Reproducible real-provider procedure — not executed
+### Reproducible OpenAI procedure — not executed in Step 6.5
 
 1. Account owner privately configures OPENAI_API_KEY, RISK_PROVIDER=openai and the
    intended structured-output-capable OPENAI_RISK_MODEL in `.env.local`. Do not

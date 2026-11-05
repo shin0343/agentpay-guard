@@ -1,75 +1,78 @@
 # Release readiness update
 
-2026-11-04 local / 2026-11-05 UTC · Previous audit: `a4311c9`.
+2026-11-05 UTC / 2026-11-04 America/Los_Angeles. Baseline: `19cd3a7`.
 
-**Final verdict: NOT READY.** Critical payment acceptance still lacks a genuine
-Sandbox order, payer approval, completed capture and independent provider/storage/UI
-comparison. Genuine AI inference and signed Sandbox webhook delivery are also
-unverified. Local tests and mock screenshots do not close those gates.
+**Final verdict: NOT READY.** Meta Model API is integrated and genuine Muse Spark
+inference is verified. Critical PayPal acceptance remains unverified: supplied
+Sandbox credentials returned 401 invalid_client, merchant configuration is absent,
+and no real order, payer approval, capture or signed webhook has been established.
 
-## Change since the audit
+## Current disposition
 
-| Item | Updated disposition |
+| Item | Result |
 |---|---|
-| Ambiguous capture timeout P1 fix | Preserved byte-for-byte in server source; final recovery/state/DB regressions pass |
-| Environment/connectivity | Diagnosed: provider endpoints reachable (unauthenticated 401); real credentials/account access absent |
-| PostgreSQL/application | Existing cluster verified; new isolated DB migrated; actual production Next app exercised locally |
-| Historical conditional P1 | **NOT APPLICABLE to inspected local data:** 21 schemas across four existing DBs, zero public payment rows, 32 known test payments, zero failed-after-unknown candidates. External deployments remain unassessed if any exist |
-| AI failure UI | Fixed misleading concern copy when no assessment completed; desktop/mobile actual missing-key flow verified |
-| Regression/build | Typecheck, lint, 146 tests including five actual PostgreSQL checks, live/mock Webpack builds and browser/visual/accessibility checks passed |
-| Real Sandbox / real inference / genuine webhook | **Still blocked; zero completed real verification cases** |
+| Meta provider | Integrated through existing RiskAssessor/fetch-based Responses abstraction; explicit MODEL_API_KEY; Standard muse-spark-1.3 |
+| Genuine inference | Four final completed cases: normal 5/ALLOW, unusual 65/REVIEW, policy-blocked 95/BLOCK, description injection 82/REVIEW; additional real CLI probe passed |
+| Failed AI behavior | Genuine initial timeouts and invalid evidence stayed conservative; canonical-path schema corrected the confirmed integration defect without weakening validation |
+| Audit / data | Actual PostgreSQL persisted evaluations, model/response diagnostics and a verified 21-event chain; no payment rows |
+| Frontend | Existing UI rendered actual saved model/score/explanation records in labelled intercepted-display checks; no UI source changes |
+| Regression | 166 passed, zero failed/skipped, including 20 Meta and five actual PostgreSQL checks; typecheck, lint, Webpack production build and existing desktop/mobile E2E passed |
+| Sandbox authentication | Credential-backed HTTP 401 / invalid_client; pair preserved; no production endpoint used |
+| Actual order / payer / capture | None; approval URL cannot exist until authentication and order creation succeed |
+| Genuine signed webhooks | None; no subscription ID or approved public HTTPS listener |
+| Previous payment security fixes | Preserved: payment service, policy, auth, PayPal client, transitions, migrations and frontend unchanged from baseline |
 
-No new confirmed P0/P1 implementation defect was found in this bounded follow-up.
-The only source change selects accurate explanation copy from returned risk status.
-There is no authorization, policy, payment transition, DB migration, dependency or
-visual-system rewrite. No provider credentials were changed or committed.
+The live inference sample proves integration and conservative decision behavior,
+not validated fraud-detection accuracy or a general latency guarantee. Recorded-data
+frontend tests intercept GET responses; the existing full backend E2E uses fixture
+AI and intercepted payments. Neither closes real payment acceptance.
 
-## Remaining release gates, in priority order
+## Remaining actions, prioritized
 
-1. **P1 — Real payment.** Account owner supplies private Sandbox app/merchant
-   configuration and performs personal payer login. Complete the actual app flow,
-   run `pnpm sandbox:verify pay_<id>`, compare stored references/amount/currency/payee
-   with authoritative PayPal completion, inspect Paid on desktop/mobile and verify
-   repeated application capture produces no second charge.
-2. **P1 — Genuine AI.** Supply the server API key/account access and restart with
-   RISK_PROVIDER=openai. Run normal, suspicious and description-injection cases;
-   record returned model/response diagnostics and schema-valid persisted results.
-   Confirm deterministic rules and unavailable/invalid output remain conservative.
-3. **P1 if webhooks enabled — Real signed event.** Supply an approved public HTTPS
-   verification origin, same-app subscription and PAYPAL_WEBHOOK_ID. Verify genuine
-   signature postback/delivery, correct mapping and duplicate redelivery. A release
-   deliberately omitting webhooks must instead prove real authenticated
-   reconciliation and disclose its recovery dependency; neither real path has
-   been verified yet.
-4. **P1 conditional — Unseen historical deployment.** If an earlier deployment or
-   financial database exists outside the inspected local cluster, inventory it and
-   perform the read-only provider comparison/repair planning in the live report.
-   Do not generalize local NOT APPLICABLE to an unknown deployed database.
+1. **P1 — Fix Sandbox authentication/configuration.** The owner must verify the
+   client ID and secret are a pair from the same Sandbox REST app, and add the
+   business account's PAYPAL_MERCHANT_ID in private `.env.local`.
+   [Sandbox Apps & Credentials](https://developer.paypal.com/dashboard/applications/sandbox).
+   No actual merchant ID was invented and no credentials were changed by the agent.
+2. **P1 — Complete genuine payer/capture flow.** After OAuth succeeds, start the
+   actual local app, use a valid allowed request or create a fresh one if its
+   policy approval expired, create the owned order and provide its real approval
+   URL to the owner. The owner logs in as a Sandbox Personal buyer. Then capture,
+   independently GET-verify with `pnpm sandbox:verify pay_<id>`, compare persisted
+   state/UI and repeat capture safely. No buyer action is pending on an existing
+   order because no order has been created.
+3. **P1 if webhooks enabled — Genuine delivery.** Provide/authorize a nonproduction
+   public HTTPS callback, register the same Sandbox app's listener and set
+   PAYPAL_WEBHOOK_ID. Verify real signature postback, correct mapping and genuine
+   duplicate redelivery. No service was exposed, tunnel created or infrastructure
+   changed. If webhooks are deliberately omitted, real reconciliation still needs
+   acceptance and disclosure.
+4. **P1 conditional — External historical deployment.** The previous local-only
+   investigation found no affected financial history. Any deployment outside that
+   scope still needs inventory/read-only assessment before resubmission. Actual
+   Meta probes only added proposals to new isolated local databases; no old
+   financial states were rewritten.
 
-The smallest immediate owner action is to populate gitignored `.env.local` with
-the Sandbox app ID/secret/business merchant ID, real AI key/provider and remaining
-required app settings, then make a personal buyer login available. Set up public
-HTTPS and the same-app webhook subscription for the webhook gate. Do not paste
-secrets/passwords into chat, a report, screenshot or a commit.
+Meta key/provider/model and missing local-only DB/session/demo settings are now
+configured privately; the environment file remains ignored and owner-readable.
+The owner need not send secrets/passwords in chat. Actual runtime API initialization still
+requires the missing merchant field. Temporary fixture regression settings are
+separate and do not stand in for working payment credentials.
 
-P2 limitations carried forward: no production IAM/session revocation or background
-reconciliation worker; development-only minimatch advisory; deployment/ingress
-and standard Turbopack build parity remain unassessed. The established local
-Turbopack restriction was not retried; Webpack is the validated production path.
-No public tunnel, remote push or production deployment was performed.
+P2 limitations carried forward: shared demo identities/stateless sessions, caller
+or webhook-driven reconciliation, dev-only minimatch advisory, unverified public
+operations/ingress, and the established local Turbopack restriction. Webpack is the
+validated build path. No push, public deployment or submission was performed.
 
-## Evidence and resumption
+## Evidence
 
-- [Live report](LIVE_INTEGRATION_REPORT.md): environment, executed checks and scoped
-  historical investigation.
-- [Sandbox record/runbook](SANDBOX_TRANSACTION_EVIDENCE.md): actual evidence fields
-  remain empty, exact account/transaction/webhook steps and repeat-capture check.
-- [AI record/runbook](AI_INFERENCE_VERIFICATION.md): genuine inference remains zero,
-  actual missing-key diagnostics and a proposal-only real-provider procedure.
+- [Meta integration](META_MODEL_API_INTEGRATION.md): protocol, schema fix, real
+  identifiers/timestamps, reproducible commands and regression scope.
+- [Live report](LIVE_INTEGRATION_REPORT.md): current run and retained Step 6.5 history.
+- [AI verification](AI_INFERENCE_VERIFICATION.md): genuine vs controlled failures,
+  persisted results and display boundaries.
+- [Sandbox evidence](SANDBOX_TRANSACTION_EVIDENCE.md): actual auth rejection,
+  empty transaction evidence and payment/webhook runbooks.
 
-On resumption, verify the private environment without echoing values, use the
-existing security-fixed implementation and retain the original payment/attempt
-IDs. Append sanitized real observations and timestamps rather than replacing
-these missing-evidence statements with assumed success. Update readiness only
-after applicable gates are demonstrated; do not create a fresh purchase to bypass
-an ambiguous earlier capture.
+**Do not proceed to Step 7 as integration-complete yet.** Reassess after a genuine
+completed Sandbox capture and the applicable webhook/reconciliation acceptance.

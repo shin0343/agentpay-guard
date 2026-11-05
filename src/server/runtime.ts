@@ -3,8 +3,7 @@ import { config } from "./config";
 import { PostgresStore } from "./db/postgres";
 import { SandboxPayPal } from "./paypal/client";
 import { GuardService } from "./service";
-import { SafeRiskAssessor } from "./risk/assessor";
-import { OpenAIRiskAssessor } from "./risk/openai";
+import { createRiskAssessor } from "./risk/provider";
 import { GuardHttp } from "./http";
 let instance: GuardHttp | undefined;
 export function runtime() {
@@ -26,9 +25,7 @@ export function runtime() {
       new GuardService(
         store,
         paypal,
-        cfg.RISK_PROVIDER === "openai"
-          ? new OpenAIRiskAssessor(cfg.OPENAI_API_KEY, cfg.OPENAI_RISK_MODEL)
-          : new SafeRiskAssessor(cfg.RISK_PROVIDER),
+        createRiskAssessor(cfg),
         cfg.PAYPAL_MERCHANT_ID,
         cfg.DEMO_MODE === "true",
       ),

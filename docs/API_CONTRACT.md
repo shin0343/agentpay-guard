@@ -620,3 +620,16 @@ the nested `webhook_event` JSON value; application processing parses a separate
 copy. Capture identifiers must be nonempty, bounded canonical provider IDs before
 recording settlement. Contradictory voided/captured provider responses remain
 unconfirmed rather than becoming a new retryable unpaid payment.
+
+### Meta provider extension (2026-11-05 UTC, before implementation)
+
+Add explicit `RISK_PROVIDER=meta`, server-only `MODEL_API_KEY` and
+`META_RISK_MODEL=muse-spark-1.3` (Standard only). The shared Responses wire client
+may call the fixed Meta endpoint `https://api.meta.ai/v1/responses`; no purchase
+input selects a host, key, model or provider. Audit diagnostics accept provider
+`meta` and record the returned model/validated response ID. Public schemas,
+deterministic policy combination, eight-second evaluation budget, review authority
+and all payment transitions remain unchanged. Provider failures never select fixtures.
+Meta's strict wire schema enumerates the canonical text evidence paths accepted
+by the unchanged service validator, with paired null evidence/source for context
+facts. Meta prompt version `r-3-meta-1` clarifies those paths; OpenAI retains `r-3`.

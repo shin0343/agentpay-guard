@@ -8,13 +8,24 @@ connection, reviewer credential or capture capability.
 ## Runtime and configuration
 
 ```dotenv
-RISK_PROVIDER=openai
-OPENAI_API_KEY=<server-only credential>
-OPENAI_RISK_MODEL=gpt-4o-mini-2024-07-18
+RISK_PROVIDER=meta
+MODEL_API_KEY=<server-only credential>
+META_RISK_MODEL=muse-spark-1.3
 ```
 
-The model is configurable; choose a structured-output-capable model available to the
-account. The pinned default is a compatibility baseline, not a claim about current
+Meta Model API is the preferred actual provider. `MetaRiskAssessor` explicitly
+passes MODEL_API_KEY to the shared Responses client, pins `https://api.meta.ai/v1`,
+and accepts only Standard `muse-spark-1.3`. It uses minimal reasoning within the
+same eight-second budget and strict `text.format` schema. Canonical text evidence
+paths are enumerated; context evidence/source must both be null. Returned model
+identity is checked and recorded with prompt `r-3-meta-1`. No payment policy changes.
+See [META_MODEL_API_INTEGRATION.md](META_MODEL_API_INTEGRATION.md) for genuine results.
+
+OpenAI remains available with RISK_PROVIDER=openai, OPENAI_API_KEY and
+OPENAI_RISK_MODEL (default gpt-4o-mini-2024-07-18). Its original prompt is `r-3`.
+
+OpenAI's model is configurable; choose a structured-output-capable model available to the
+account. Its pinned default is a compatibility baseline, not a claim about current
 model quality or optimal pricing. Empty/missing API credentials produce unavailable
 risk and human review. Unknown provider names fail configuration validation.
 `RISK_PROVIDER=fixture` requires `DEMO_MODE=true`; it never silently replaces a failed

@@ -1,12 +1,50 @@
 # Sandbox transaction evidence
 
-2026-11-04 local / 2026-11-05 UTC · **BLOCKED — no genuine Sandbox transaction.**
+Latest: 2026-11-05 UTC / 2026-11-04 local · **BLOCKED — no genuine Sandbox transaction.**
 
-## Evidence record
+## Current credential-backed check
+
+The supplied private client ID/secret were tested against Sandbox OAuth at
+`2026-11-05T04:39:56.562Z`: **HTTP 401, invalid_client, authenticated=false**.
+No token was logged/stored. This is a genuine Sandbox API call, but no authenticated
+order, payer approval or capture was possible. The endpoint was never changed to live.
+The probe used the documented Basic-auth client-credentials exchange.
+[Official authentication reference](https://developer.paypal.com/api/rest/authentication/).
+PAYPAL_MERCHANT_ID and PAYPAL_WEBHOOK_ID remain missing; no public HTTPS listener
+is configured. The buyer account has not been authenticated or verified.
+
+The original pair was preserved. Missing nonfinancial local settings were privately
+completed and Meta inference genuinely passed four final cases. Application startup
+still requires the actual merchant configuration; no merchant was fabricated.
+
+**Next owner action:** in [Sandbox Apps & Credentials](https://developer.paypal.com/dashboard/applications/sandbox),
+verify the client ID/secret belong to the same Sandbox REST app and save them in
+`.env.local`; add that Sandbox business account's PAYPAL_MERCHANT_ID. Do not paste
+the values into chat. Then repeat OAuth and existing checkout. There is **no actual
+payer approval URL yet** because no order exists. A Sandbox personal buyer login
+is needed only after authentication/order creation succeed.
+
+For genuine webhooks, supply an approved nonproduction HTTPS origin and same-app
+subscription ID. No tunnel, public listener or deployment was started; explicit
+authorization is required before exposing a local service. The procedure below
+remains pending and simulator events do not close this gate.
+
+Current totals: one credential-backed OAuth attempt rejected; **zero orders,
+zero approvals/captures and zero genuine signed events**. Meta assessment completion
+or ALLOWED does not change any of those payment facts.
+
+## Historical Step 6.5 evidence
+
+The following evidence table records the earlier run before `.env.local` was
+supplied. Its unauthenticated reachability probe is separate from the current
+credential-backed rejection above. The manual transaction/webhook procedures
+remain unexecuted; use Meta configuration from the current integration guide.
+
+### Historical evidence record
 
 | Field | Actual result |
 |---|---|
-| Baseline | `a4311c9`, security fixes preserved |
+| Historical baseline | `a4311c9`, security fixes preserved |
 | Network probe | `2026-11-05T03:44:38.173Z`, unauthenticated Sandbox OAuth HTTP 401 |
 | Genuine order ID | None |
 | Genuine payer approval | None |
@@ -21,7 +59,7 @@ ID were missing, and no personal payer session was provided. The webhook ID,
 subscription and public HTTPS listener were also absent. Existing fixtures and
 intercepted “Paid” screenshots must not fill any field above.
 
-## Executed security-sensitive scenarios
+### Step 6.5 security-sensitive scenarios
 
 | Scenario | Current observed evidence | Remaining real-provider check |
 |---|---|---|

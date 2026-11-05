@@ -1,20 +1,24 @@
-import { config } from "../src/server/config";
+import { riskConfig } from "../src/server/config";
 import { PostgresStore } from "../src/server/db/postgres";
-import { OpenAIRiskAssessor } from "../src/server/risk/openai";
+import { createRiskAssessor } from "../src/server/risk/provider";
 import { riskContext } from "../src/server/risk/context";
 import { assessSafely } from "../src/server/risk/evaluate";
 
 /** Opt-in live inference probe. Reads a stored request; never creates orders or captures. */
 async function main() {
-  const cfg = config();
-  if (cfg.RISK_PROVIDER !== "openai" || !cfg.OPENAI_API_KEY)
+  const cfg = riskConfig();
+  if (!(
+    (cfg.RISK_PROVIDER === "meta" && cfg.MODEL_API_KEY) ||
+    (cfg.RISK_PROVIDER === "openai" && cfg.OPENAI_API_KEY)
+  ))
     throw new Error(
-      "Set RISK_PROVIDER=openai and OPENAI_API_KEY on the server.",
+      "Configure a real risk provider and its server-only API key.",
     );
   const rid = process.argv[2];
   if (!rid?.startsWith("preq_"))
     throw new Error("Usage: pnpm risk:verify preq_<id>");
-  const store = new PostgresStore(cfg.DATABASE_URL);
+  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required");
+  const store = new PostgresStore(process.env.DATABASE_URL);
   try {
     const { request, context } = await store.tx((s) => {
       const request = s.requests[rid];
@@ -33,7 +37,7 @@ async function main() {
       };
     });
     const result = await assessSafely(
-      new OpenAIRiskAssessor(cfg.OPENAI_API_KEY, cfg.OPENAI_RISK_MODEL),
+      createRiskAssessor(cfg),
       request,
       context,
     );

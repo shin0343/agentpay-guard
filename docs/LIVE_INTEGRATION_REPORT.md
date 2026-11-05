@@ -1,13 +1,91 @@
 # Live integration verification report
 
-2026-11-04 America/Los_Angeles / 2026-11-05 UTC. Baseline: `a4311c9`.
+Latest verification: 2026-11-05 UTC / 2026-11-04 America/Los_Angeles.
+Baseline: `19cd3a79a12327c679afb1ea6242086d671a396f`.
 
-**Verdict: NOT READY.** Real Sandbox checkout/capture, signed webhook delivery and
-real AI inference remain blocked by unavailable account configuration. No real
-transaction or model success is claimed. The checks below establish environment
-readiness and local regression behavior, not external-provider acceptance.
+**Verdict: NOT READY. Meta inference is now genuinely verified.** PayPal Sandbox
+OAuth returned `401 invalid_client`; merchant configuration and signed webhook
+delivery remain unavailable. No real order, payer approval or capture is claimed.
 
-## Environment diagnosis
+## Current Meta verification
+
+The existing fetch-based Responses client now supports explicit Meta selection,
+MODEL_API_KEY and Standard `muse-spark-1.3`. No SDK/dependency or frontend change was
+needed. Four final actual Meta evaluations completed through GuardService and
+PostgreSQL: normal 5/ALLOW, unusual 65/REVIEW, hard-policy blocked 95/BLOCK, and
+description injection 82/REVIEW. The provider-reported model, validated response
+IDs and `r-3-meta-1` are recorded; the 21-event ledger verified, with no payment rows.
+An additional real `risk:verify` exited 0 without changing the persisted decision.
+
+Two actual integration problems were diagnosed: low reasoning exceeded the existing
+eight-second budget on complex inputs; and model evidence paths included the
+`untrusted_purchase` wrapper, which the server correctly rejected. Meta now uses
+official minimal reasoning and a canonical-path/paired-null schema. The shared
+grounding validator and all payment protections remain unchanged. Earlier failures
+are retained and are not passing acceptance results.
+
+Detailed sanitized references, timestamps, commands and scope are in
+[META_MODEL_API_INTEGRATION.md](META_MODEL_API_INTEGRATION.md).
+
+## Current environment and PayPal boundary
+
+The supplied `.env.local` is ignored, untracked and owner-readable only. MODEL_API_KEY
+works. The supplied PayPal ID/secret were sent only to Sandbox OAuth at
+`2026-11-05T04:39:56.562Z`; HTTP 401 / invalid_client was returned. No access token
+was logged or saved. The pair was preserved, not replaced by a claimed working key.
+PAYPAL_MERCHANT_ID and PAYPAL_WEBHOOK_ID are missing; no public HTTPS listener exists.
+The account owner was asked to correct the Sandbox app pair and supply merchant ID.
+
+Missing nonfinancial settings were completed locally: explicit Meta/model selection,
+loopback APP_URL, isolated local PostgreSQL, private session secret and distinct demo
+passcodes/agent key. Only the probe-created local research-agent disabled key was
+provisioned with a hash. No historical financial state or authorization logic changed.
+Application configuration remains strict: missing merchant prevents API
+initialization. No merchant ID was invented. No public listener, tunnel or deployment was made.
+
+## Current regression and display checks
+
+Typecheck, lint, **166 tests** (zero failed/skipped, including 20 Meta and five actual
+PostgreSQL tests) and production Webpack build passed. Payment service, policy,
+authorization, state transitions, PayPal client, migrations and frontend source
+remain identical to `19cd3a7`; the ambiguous-capture fix is preserved.
+
+Existing desktop/mobile E2E passed against a separate explicit regression environment:
+actual local Next/PostgreSQL routes, fixture AI and intercepted payment/SDK boundaries.
+Those results are not genuine PayPal or Meta acceptance. Recorded genuine Meta
+evaluations were also checked through the unchanged frontend with intercepted GET
+display responses; that boundary is labelled on screenshots. It verifies rendering
+of real model/score/explanation data, not the incomplete production-runtime path.
+The final recorded-data run passed 8 desktop/mobile checks with 12 screenshots and
+zero runtime errors/overflow. Initial exact-text selectors were corrected to match
+the existing model metadata line and combined `score / 100`. Screenshot inspection
+also caught a missing `object:list` in the display driver's list envelopes; that
+driver was corrected and now asserts ledger loading and no inline contract errors.
+No application contract or UI was altered.
+
+Final suite command (private connection replaced by placeholder):
+
+```sh
+pnpm typecheck
+pnpm lint
+APG_POSTGRES_TEST=true TEST_DATABASE_URL='<disposable-regression-DB>' \
+  pnpm exec vitest run --reporter=json --outputFile=qa/meta-live/regression-tests.json
+pnpm build:webpack
+```
+
+Ignored `qa/meta-live/` retains actual provider diagnostics, initial/final risk
+evidence, CLI output, regression JSON/build logs and browser results. No provider
+key, OAuth token, raw provider body or hidden reasoning is included in committed
+evidence. See [AI verification](AI_INFERENCE_VERIFICATION.md),
+[Sandbox evidence](SANDBOX_TRANSACTION_EVIDENCE.md) and
+[readiness](RELEASE_READINESS_UPDATE.md). Genuine payment/webhook gates remain open.
+
+## Historical Step 6.5 record (03:41–04:02 UTC)
+
+The following is the earlier `a4311c9` → `19cd3a7` verification, retained for history.
+Its missing-key/zero-inference observations are superseded by the Meta evidence above.
+
+### Environment diagnosis
 
 Initial check: `2026-11-05T03:41:33Z`. The working tree was clean at `a4311c9`.
 Read the security audit, threat model, test evidence, release blockers, PayPal,
@@ -35,7 +113,7 @@ Sandbox OAuth and OpenAI `/v1/models`. They establish TLS/HTTP reachability only
 no credentials, payment operation or inference were sent. No attempt was made to
 extract credentials from unrelated projects, browser profiles or a keychain.
 
-## Executed verification
+### Executed verification
 
 Created a separate disposable local database, applied the existing migration and
 used generated local-only session/agent credentials in ignored files. PayPal
@@ -92,7 +170,7 @@ The verification server was stopped after checks, and generated local-only
 credentials were removed. Existing PostgreSQL and the unrelated application were
 left running. No supplied project configuration was overwritten.
 
-## Targeted correction
+### Targeted correction
 
 Observed a P2 explanation error: an unavailable assessment correctly required
 review, but the trace and focused review said the AI had raised a concern. Both
@@ -108,7 +186,7 @@ Paid. Representative screenshots are linked in
 `migrations/`, dependency graph and automated test source remain identical to
 `a4311c9`, including the ambiguous-capture correction.
 
-## Historical-state investigation
+### Historical-state investigation
 
 At `03:43:14Z`, before new tests, inspected the four known project-local databases
 in explicit read-only transactions. Provenance was cross-checked at `03:44Z`.

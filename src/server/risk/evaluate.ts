@@ -42,6 +42,7 @@ export async function assessSafely(
       .strictObject({
         provider: z.enum([
           "openai",
+          "meta",
           "fixture",
           "unavailable",
           "none",
