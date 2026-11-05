@@ -1,5 +1,10 @@
 # Test evidence
 
+## Latest genuine acceptance — 2026-11-05T17:07–17:12Z
+
+Real Sandbox order 2UE55412FX0764120, capture 32E66103YN1557633, USD 18.00 COMPLETED independently verified against provider and PostgreSQL; repeated protected capture same ID/one attempt. Original approval/completion events plus supported PayPal resends: four HTTP200 receipts, each independently real-postback verified, one dedupe/audit entry per distinct event, 106-event chain valid. Real tamper/missing-header probes returned400. Actual desktop/mobile request/payment Paid screens pass without interception (four screenshots). Full PostgreSQL-enabled suite193/193, six real PG checks, typecheck/lint/Webpack build passed. Controlled provider failure tests remain distinct from genuine positive acceptance. See SANDBOX_TRANSACTION_EVIDENCE.md and WEBHOOK_VERIFICATION.md for IDs/timestamps/commands and evidence limits. Temporary tunnel/proxy stopped after proof; no production/push. Prior dated evidence below is historical.
+
+
 ## Latest webhook integration review — 2026-11-05 UTC, baseline cbf3642
 
 **Verdict: NOT READY.** Actual capture and genuine signed delivery remain unverified.

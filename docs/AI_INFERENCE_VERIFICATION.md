@@ -1,8 +1,9 @@
 # AI inference verification
 
 Latest: 2026-11-05 UTC / 2026-11-04 local · **Actual Meta inference VERIFIED.**
-Baseline `19cd3a7`. Overall release remains NOT READY because payment acceptance
-is incomplete. The current provider is Meta Model API, Standard `muse-spark-1.3`.
+Baseline `19cd3a7` for the original AI run. Overall release is now READY WITH
+DISCLOSED LIMITATIONS: real capture and signed original/redelivery acceptance
+completed 2026-11-05T17:07–17:12Z. Earlier pending-payment notes below are historical. The current provider is Meta Model API, Standard `muse-spark-1.3`.
 
 ## Current genuine AI evidence
 

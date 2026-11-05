@@ -4,8 +4,7 @@
 
 **Integrated and genuinely verified:** Muse Spark Standard completed all four final
 risk scenarios through the actual risk adapter, policy service and PostgreSQL.
-**Overall release: NOT READY:** PayPal OAuth rejected the supplied pair, merchant
-configuration is missing, and no real payment or signed webhook is verified.
+**Current overall release: READY WITH DISCLOSED LIMITATIONS.** Genuine Sandbox capture and signed webhooks/redeliveries verified 2026-11-05T17:07–17:12Z; see RELEASE_READINESS_UPDATE.md. Initial credential failures described below are historical, resolved; merchant configuration is optional with persisted recipient binding.
 
 ## Implementation
 

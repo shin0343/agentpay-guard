@@ -1,121 +1,113 @@
-# PayPal Sandbox webhook verification
+# Genuine PayPal Sandbox webhook verification
 
-## Latest autonomous setup and buyer handoff — 2026-11-05 UTC
+2026-11-05 UTC. **Original signed delivery and genuine supported redelivery VERIFIED.**
+No simulator events were used for this acceptance.
 
-**NOT READY; real HTTPS listener working, paused only for Sandbox buyer approval.**
-Baseline 3c33648. This is the local macOS ARM64 workspace with Homebrew, existing
-Next app on 127.0.0.1:3100 and actual local PostgreSQL, not a Linux container.
-Installed ngrok 3.39.13 and cloudflared 2026.10.7 through Homebrew. No ngrok auth
-configuration/environment token existed; actual ngrok start failed ERR_NGROK_4018.
-Resolved the HTTPS requirement autonomously with Cloudflare Quick Tunnel, which
-requires no account/domain. No ngrok credentials or account login were requested.
+## Registration and secure transport
 
-Actual callback: **https://magnificent-sword-adjustable-exchanges.trycloudflare.com/api/v1/webhooks/paypal**
-Existing Sandbox Webhook ID: **12968018AN5251707**. PATCH and independent GET both
-HTTP 200 at 2026-11-05T08:52:35.553Z; previous example hostname replaced, ID and [*] subscriptions
-preserved. Today's actual event history query returned 200/zero events before the
-fresh transaction, so there was nothing genuine to resend.
+Webhook ID **12968018AN5251707** was GET-verified using the same Sandbox REST
+credentials that own the order. Existing registration was PATCHed, never duplicated;
+subscriptions **[*]** preserved. Last verified callback:
+**https://magnificent-sword-adjustable-exchanges.trycloudflare.com/api/v1/webhooks/paypal**.
 
-Public ingress goes only to scripts/webhook-tunnel-proxy.ts on loopback 3102,
-which forwards exact bounded raw bytes and PayPal headers to the existing handler.
-Public POST webhook → actual app 400 invalid signature with X-Request-Id; public
-GET webhook, /login, /requests and POST /api/v1/session → 404. Console/cookie/agent
-credentials are never forwarded. The actual signature check remains enabled.
-Successful signed receipts will be retained privately (mode 0600) under ignored
-qa/tunnel-live/receipts, with original bytes/base64, hash, signature headers and
-app trace. No genuine signed receipt has yet been observed. Stop temporary tunnel
-and proxy after capture/webhook verification; keep them during this manual handoff.
-Quick Tunnel URL is temporary and changes on restart; never blindly reuse it.
+ngrok 3.39.13 was installed but requires absent account authentication
+(ERR_NGROK_4018). cloudflared 2026.10.7 provided a real account-free development
+Quick Tunnel. It forwarded only to scripts/webhook-tunnel-proxy.ts on loopback
+3102, then the existing app on 3100. Public POST exact webhook path reached the
+signature gate (400 unsigned); GET webhook, /login, /requests and POST /session
+were 404. Cookies/Authorization/proxy identity are stripped. Raw bounded body and
+all required PayPal signature headers are forwarded unchanged. Admin routes were
+never exposed. PAYPAL_WEBHOOK_ID was configured privately, ignored mode 0600.
 
-Read-only actual PayPal/DB reconciliation at 08:49:32Z again found the three prior
-orders unapproved/uncaptured. All original approvals elapsed. Normal authenticated
-GET expired the last old request (EXPIRED/local VOIDED); original expiry, zero
-attempts and the audit prefix were preserved. Only local evidence was archived.
-No historical financial record was reset, extended or falsely marked paid.
+Tunnel and proxy were deliberately stopped at **2026-11-05T17:13:14.404Z** after acceptance.
+The recorded URL is historical and will be offline; it is not a production endpoint.
 
-Fresh request …RPXM8V / payment …DB5VNR created actual USD 18.00
-Sandbox order …28461L at 2026-11-05T08:54:31.816Z. Actual Meta Standard
-muse-spark-1.3 completed score 5, 5094 ms at 2026-11-05T08:54:30.656Z; all eight
-policy checks passed. Provider GET verified merchant binding, request correlation,
-order, USD and amount. Request/checkout replays retained IDs; duplicate proposal
-BLOCKED; exactly one payment for the fresh request; 73-event chain valid.
-Current PayPal PAYER_ACTION_REQUIRED, app CHECKOUT_PENDING/AWAITING_PAYER, zero
-capture attempts/IDs. Internal approval deadline: **2026-11-05T09:24:30.669Z**
-(**November 5, 2026 at 1:24:30 AM PST**), existing unmodified 30-minute policy.
+## Genuine event and transmission evidence
 
-Owner's only required action: open the fresh approval URL supplied in the current
-conversation, preferably a private window to avoid the earlier seller session,
-log in as a Sandbox Personal buyer, verify USD 18.00 and click final Pay Now.
-Then confirm. Do not use a real PayPal account or share a password. No approval
-was simulated and no capture was initiated for this fresh request.
+| Type | Genuine event ID | Original accepted | Supported resend accepted |
+|---|---|---|---|
+| CHECKOUT.ORDER.APPROVED | WH-3L457725DB258725S-9D926970GM508220C | 17:07:29.208Z | 17:10:48.948Z |
+| PAYMENT.CAPTURE.COMPLETED | WH-4FB93280BR311460T-8A339730AG632664K | 17:08:13.194Z | 17:09:49.213Z |
 
-After confirmation: independently GET provider/order and internal expiry/state;
-use guarded capture only if valid, or verify an already-completed return-handler
-capture. Run sandbox:verify, compare DB/audit/frontend, repeat the terminal capture
-as a no-op, then prove genuine signed delivery/correlation/acknowledgement and
-supported resend/dedupe. No success may be inferred from the public unsigned probe.
+Both relate to order **2UE55412FX0764120**; completion identifies capture
+**32E66103YN1557633**, USD 18.00. Original completion was generated at
+17:07:55.590Z. Individual event details GET returned 200 with matching type; the
+supported resend API returned 202 for each original event and actual re-delivery
+was then observed. A 202 alone was not counted as proof of delivery.
 
-Current checks: **193 passed**, no failures/skips, 17 files, six actual PostgreSQL
-checks; typecheck/lint/Webpack production build pass. Four new real-socket proxy
-checks prove raw bytes/headers, credential stripping, path/method restriction,
-64KiB bound and failure non-acknowledgement. Existing desktop/mobile E2E passed
-(37 screenshots), explicit fixture AI/intercepted payments. These controlled
-results do not establish a genuine capture or signed event. No frontend/payment
-logic change, provider replacement, production deployment, push or submission.
+All **four receipts** have original body hash match, required transmission headers,
+app HTTP **200** and **independent real PayPal postback SUCCESS** using the correct
+registered ID and original bytes. Distinct original/resend transmission IDs were
+retained privately. First delivery traces:
 
-## Historical verification — previous tunnel blockers superseded by this setup
+- Approval: req_01M6PAW1T5FWX4GYFQ50VF0DAK.
+- Completion: req_01M6PAXCTN45Q9V2J3EDVDJYVS.
 
+Each first trace matches its webhook.received audit correlation ID and correct
+payment. Both event IDs have one durable dedupe row and one audit event. Replayed
+completion/older approval produced no new event audit entry, capture, attempt or
+downgrade. Final 106-event chain verified and payment record remained unchanged.
 
-Run: 2026-11-05 UTC, baseline cbf3642. **NOT READY: genuine signed delivery unverified.**
+## Authenticity and negative checks
 
-## Genuine Sandbox evidence
+The existing handler preserves original bounded UTF-8 JSON; SandboxPayPal embeds
+that original value in the documented verify-webhook-signature postback. It passes
+transmission ID/time/signature, auth algorithm, restricted Sandbox certificate URL
+and configured webhook ID. Only SUCCESS permits processing. Event status/amount
+are untrusted; known owned-order reconciliation uses PayPal and central transitions.
+Approval event itself never starts a fresh capture. Existing unknown-attempt recovery
+retains the original authorized request ID and policy/lease guards.
 
-- OAuth succeeded against the pinned Sandbox endpoint. GET `/v1/notifications/webhooks/12968018AN5251707` returned HTTP 200 at 07:54:57Z using the same configured REST credentials that read the stored orders. This establishes app-scoped access to that registration; no client secret or access token was printed.
-- Registered ID: **12968018AN5251707**. Initial callback: **https://agentpay-guard-example.ngrok-free.app**. One registration exists; subscriptions are `*`, covering every supported handler event. No duplicate registration or subscription removal was performed.
-- Actual handler: **POST /api/v1/webhooks/paypal**, local **127.0.0.1:3100**. The initial root URL did not target that handler. At 2026-11-05T08:02:18.720Z, PATCH /url returned HTTP 200 and an independent GET returned 200 confirming **https://agentpay-guard-example.ngrok-free.app/api/v1/webhooks/paypal**. ID, hostname and wildcard subscriptions were preserved. No new registration was created. The hostname remains offline.
-- POST to the registered hostname with the handler path returned **HTTP 404 / ERR_NGROK_3200** at 07:55:53Z; no application X-Request-Id was returned. This is an unsigned connectivity probe, not a PayPal delivery.
-- No running ngrok process or inspector on port 4040; no executable/config found in PATH, standard Homebrew/local/config paths, Downloads or project. No NGROK_AUTHTOKEN/NGROK_DOMAIN available. A current HTTPS tunnel hostname cannot be established from this environment. No unrelated deployment/tunnel was created.
-- Configured **PAYPAL_WEBHOOK_ID=12968018AN5251707** privately in ignored `.env.local`, preserved all other settings, retained mode 0600 and restarted the local app. APP_URL remains loopback; there is no invented public origin.
-- GET `/v1/notifications/webhooks-events?page_size=100&start_time=2026-11-05T00:00:00Z` returned HTTP 200 with **zero events**. No genuine event ID, delivery status, signature success or resend result exists to report. No simulator request was sent. There was no event to resend.
+Against the real public ingress and real PayPal verifier, independently modifying
+(1) signature or (2) signed event ID returned **400 VALIDATION_FAILED**; missing
+headers also returned 400. No events or payment mutations resulted. These are
+controlled negatives using a genuine receipt, not simulated positive acceptance.
+The original two valid events and two real PayPal resends are the positive proof.
 
-## Capture premise independently checked
+Controlled automated coverage additionally tests valid raw compact/whitespace/
+Unicode byte preservation, unknown transaction safety, policy block/review guards,
+out-of-order distinct pending/denied events, transient failure without premature
+dedupe, concurrent capture/reconcile and conservative unknown-timeout replay.
+Those cases were not all induced as natural PayPal failures. Genuine older approval
+redelivery after completion specifically proved duplicate/out-of-order replay safety.
 
-At 07:54:31Z, actual Orders GET and stored recipient/request/order/amount checks found:
+## Reproduction without secrets
 
-| Order suffix | Provider state | Captures | Internal state | Capture attempts |
-|---|---|---|---|---|
-| 37130M | PAYER_ACTION_REQUIRED | 0 | EXPIRED / local VOIDED | 0 |
-| 12980C | PAYER_ACTION_REQUIRED | 0 | EXPIRED / local VOIDED | 0 |
-| 24282M | PAYER_ACTION_REQUIRED | 0 | CHECKOUT_PENDING / AWAITING_PAYER; approval expired 07:37:52.958Z | 0 |
+1. Start local app with ignored Sandbox/Meta/DB/private operator configuration and
+   PAYPAL_WEBHOOK_ID=12968018AN5251707. Keep APP_URL at the actual app origin.
+2. Start restricted ingress and temporary tunnel (no background login service):
 
-All are USD 18.00. DB capture IDs are null; 60-event audit chain valid at that baseline, with no payment/webhook settlement events. **A completed real capture is not established in this environment**, despite the owner's report. A completed transaction on another environment/app needs its order or capture ID for read-only verification. No expired order was captured, extended, replaced or marked paid. No new transaction was created while callback/capture evidence is unresolved.
+```sh
+pnpm exec tsx scripts/webhook-tunnel-proxy.ts
+cloudflared tunnel --no-autoupdate --url http://127.0.0.1:3102 --protocol http2
+```
 
-## Implemented verification and targeted correction
+3. Use the **actual printed URL** plus /api/v1/webhooks/paypal; confirm public
+   unsigned POST returns application 400 and administrative paths return 404.
+   PATCH /v1/notifications/webhooks/12968018AN5251707 replacing only /url;
+   preserve subscriptions, then independent GET. Do not reuse the stopped URL.
+4. Prefer existing genuine events: GET /v1/notifications/webhooks-events/<id> and
+   POST /v1/notifications/webhooks-events/<id>/resend with
+   {"webhook_ids":["12968018AN5251707"]}. Reusing these completed-payment events
+   cannot create a fresh purchase/capture; terminal handling dedupes.
+5. Inspect protected ignored receipts, re-run SandboxPayPal.verify on exact bytes/
+   headers, compare dedupe/audit/order/capture and independent provider state.
+   Verify genuine second transmission and unchanged payment/attempt count.
+6. Stop only the temporary tunnel/proxy afterward. Never expose session/admin
+   paths, publish passcodes, bypass verification or write raw receipts to Git.
 
-The handler preserves the bounded original UTF-8 JSON body and transmission headers. SandboxPayPal embeds the original body as `webhook_event` in the official verify-webhook-signature postback using the configured ID. Only SUCCESS permits processing; certificate host/path is restricted to Sandbox. Event bodies cannot set financial amount/status: the handler correlates the stored order and reconciles authoritative PayPal state through existing transitions. Event IDs dedupe; no new capture is allocated by an approval event. Unknown capture recovery can resend only its already-authorized original attempt under existing time/policy/lease guards.
+Final regression: **193 pass**, six actual PG checks; typecheck/lint/Webpack build
+pass. Four actual Paid desktop/mobile checks pass. Earlier full same-code browser
+E2E is fixture-labelled. No payment/state-machine or frontend change was needed
+for this successful acceptance.
 
-Confirmed P2 robustness issue: missing signature headers or malformed certificate URLs could return 503 as if PayPal were unavailable, instead of rejecting invalid input before I/O. Reproduction: remove a required header from a valid-shaped request or set cert URL to `not a URL`; five new negative cases failed before correction. Remediation: require nonblank bounded signature headers and catch invalid URL parsing locally. Result: 400, no provider I/O, no state changes. Six negative regression cases pass after correction; two old transport fixtures now supply complete synthetic headers. No authorization, policy, amount, idempotency or capture transition changed.
+Limitations: ephemeral tunnel is not managed deployment; no provider-held PENDING,
+real funding decline or induced network ambiguity tested in this transaction.
+Unknown/denied-terminal events retain dedupe IDs without a separate ignore-audit
+entry. No general fraud accuracy, production IAM, scale or production-payments
+readiness claim. See RELEASE_READINESS_UPDATE.md.
 
-## Executed controlled security tests
-
-These results **are not genuine signed Sandbox delivery**:
-
-- Local RSA/SHA256 + CRC32 postback double validates compact, whitespace and Unicode-escape original bytes; tampering is rejected.
-- Missing cert/algo/transmission ID/time/signature and malformed cert URL rejected locally; real running local handler probes for missing headers and malformed cert returned 400.
-- Validated-event doubles: authoritative order wins over forged payload status/money; pending capture settles once; duplicate/replay is a no-op; out-of-order pending/denied cannot downgrade completed; unknown transaction is deduped without provider/order side effects; review/blocked proposals cannot be paid through a webhook.
-- Transient order read failure returns 503 without storing dedupe success; retry can settle. Existing capture-timeout/concurrency tests preserve unknown outcomes and original IDs; no fresh charge attempt from ambiguous replay.
-- Known limitation: ignored unknown/denied-terminal events store dedupe IDs without a separate webhook audit entry. Matched actionable events append webhook.received; genuine event/audit mapping is still unverified.
-
-## Remaining minimum actions and reproduction
-
-The owner was asked for the actual running tunnel HTTPS address and completed transaction ID, not passwords/tokens. Once available, the agent can finish autonomously:
-
-1. Establish the existing authorized development tunnel to this app, restricting public ingress to the webhook path; keep administrative/session routes private. Confirm no redirect and that an unsigned probe reaches the app and returns 400.
-2. PATCH **the existing ID** `/v1/notifications/webhooks/12968018AN5251707`, replacing `/url` with `https://<actual-tunnel>/api/v1/webhooks/paypal`; preserve the existing event subscriptions and other registrations. If the active hostname differs from the currently configured host, replace only that URL after validating reachability. The missing handler path on the existing hostname was already corrected; no new hostname was invented. Current `*` covers CHECKOUT.ORDER.APPROVED and PAYMENT.CAPTURE.COMPLETED/PENDING/DENIED; no new reversal handler is implemented.
-3. Re-read the actual completed order/capture and DB. Query genuine event history; reuse a suitable event with POST `/v1/notifications/webhooks-events/<event_id>/resend` and body `{"webhook_ids":["12968018AN5251707"]}`. A 202 resend acceptance alone does not prove delivery. Pending notifications may not resend.
-4. Require genuine POST receipt, original signed bytes/headers, successful PayPal postback, correct stored order/capture mapping, HTTP 2xx, dedupe row and audit evidence. Redeliver the same genuine event; capture ID/attempts/money stay unchanged. Independently GET-verify financial state.
-5. Only if no suitable genuine event exists and the listener works, create a fresh authorized test request. Stop for the unavoidable Sandbox Personal buyer approval; after confirmation capture through the protected backend only while approval is valid. Never treat a simulator event as this proof.
-
-Executed commands: `pnpm typecheck`, `pnpm lint`, `APG_POSTGRES_TEST=true TEST_DATABASE_URL='<disposable-regression-DB>' pnpm test`, `pnpm build:webpack`; existing `scripts/frontend-qa.cjs` on isolated port 3101 with fixture AI/intercepted payment boundaries. Final counts/results are in RELEASE_READINESS_UPDATE.md. Ignored qa/webhook-live holds sanitized local evidence/logs; raw management JSON may contain event data and is never committed.
-
-Official references: [raw-body and postback verification](https://developer.paypal.com/api/rest/webhooks/rest/), [event history](https://developer.paypal.com/api/webhooks/v1/webhooks-events-list), [resend](https://developer.paypal.com/api/webhooks/v1/webhooks-events-resend), [update registration](https://developer.paypal.com/api/webhooks/v1/webhooks-update). Checked 2026-11-05 UTC.
+Official references checked: [raw body/postback](https://developer.paypal.com/api/rest/webhooks/rest/),
+[event details](https://developer.paypal.com/api/webhooks/v1/),
+[resend](https://developer.paypal.com/api/webhooks/v1/webhooks-events-resend),
+[registration update](https://developer.paypal.com/api/webhooks/v1/webhooks-update).

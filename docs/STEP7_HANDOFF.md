@@ -1,44 +1,71 @@
-# Step 7 handoff for Claude Opus 5.5
+# Step 7 handoff — Claude Opus 5.5
 
-## Current handoff update (2026-11-05 UTC)
+**READY WITH DISCLOSED LIMITATIONS. Recommend proceeding to Step 7.**
+Step 7 has not been started. Verified product implementation commit:
+**9ddace48c0b055934426063c86b75dc3cc5602ef**; later commits update evidence only. Final evidence-commit hash is
+reported in the agent's completion response. Never change payment/security logic
+merely to improve presentation. Read AGENTS.md, DESIGN_SYSTEM.md, UX_BLUEPRINT.md
+and FRONTEND_HANDOFF.md; preserve Ledger Instrument and GuardApi boundaries.
 
-The HTTPS blocker was resolved autonomously. Active callback: https://magnificent-sword-adjustable-exchanges.trycloudflare.com/api/v1/webhooks/paypal;
-existing registration verified and restricted to webhook POST through the local
-proxy. ngrok is installed but lacks authentication; account-free Cloudflare
-Quick Tunnel is operating instead. No owner tunnel/URL setup is needed.
-Fresh genuine Meta score 5 and Sandbox order …28461L are verified, approval
-deadline 2026-11-05T09:24:30.669Z (November 5, 2026 at 1:24:30 AM PST). Paused only for manual buyer approval.
-Capture and genuine signed event remain unverified, so do not start Step 7 as
-integration-complete. Current regressions 193 pass, including six actual PG tests;
-typecheck/lint/Webpack/browser E2E pass. Preserve the active tunnel during pending
-verification and stop it afterward. Earlier blockers below are historical.
+## Genuine acceptance now complete
 
+- Actual Meta Model API Standard muse-spark-1.3, score 5, all eight deterministic
+  rules pass for USD 18.00. Earlier real unusual/review, policy block and injection
+  assessments remain in AI_INFERENCE_VERIFICATION.md. AI cannot loosen policy.
+- Actual separate Sandbox Personal buyer/test-card approval. Order
+  2UE55412FX0764120; capture 32E66103YN1557633, USD 18.00 COMPLETED.
+  Request preq_01M6PAT02AJK7SF54JHJ7W5CQ8; payment pay_01M6PAT2X22DG00DS19BWZBPZA.
+- Existing authorized backend captured within policy TTL; independent provider/DB
+  verifier exit 0. Terminal repeated capture returns same ID, one attempt/capture.
+- Genuine CHECKOUT.ORDER.APPROVED event WH-3L457725DB258725S-9D926970GM508220C and
+  PAYMENT.CAPTURE.COMPLETED event WH-4FB93280BR311460T-8A339730AG632664K; originals + PayPal-supported
+  resends HTTP 200. Independent real postback SUCCESS for all four signed receipts.
+  Correct order/capture/dedupe/audit mapping, no downgrade/additional capture.
+- Actual desktop/mobile request/payment screens Paid, capture reference and both
+  keys granted. Four screenshots; representative desktop-payment/mobile-request
+  visually inspected. 106-event audit chain valid, one completion event.
+- 193 tests pass, six real PG checks, typecheck/lint/Webpack build pass. Controlled
+  tests and earlier fixture E2E are not mislabelled as genuine provider failures.
 
-**Status: preparation only; NOT READY to start Step 7 as integration-complete.**
-No Step 7 work was performed. Preserve the existing Ledger Instrument design and GuardApi boundary; read AGENTS.md, DESIGN_SYSTEM.md and FRONTEND_HANDOFF.md before touching UI.
+## Demonstration flow and account separation
 
-## Verified product flows and limits
+Sign into AgentPay Guard at /login with the private operator passcode **before**
+checkout. Use real Meta mode for provider claims. Agent proposes trusted catalog
+purchase → policy/model trace → reviewer if required → checkout → Sandbox Personal
+buyer (separate from seller) → test funding source → Pay Now → guarded capture →
+Paid → ledger. A direct approval URL in a browser without app session may return
+to operator sign-in; that is normal app authorization, not another PayPal password.
+Never publish passcodes or ask for real card information.
 
-- Genuine Meta Model API Standard muse-spark-1.3 inference is integrated. Prior actual normal/unusual/blocked/injection cases passed conservatively; latest real purchase score 5, prompt r-3-meta-1. AI is advisory and cannot relax deterministic policy. Invalid/unavailable AI requires review. No validated fraud-detection accuracy claim.
-- Actual policy/review/auth/CSRF, quote validation, API idempotency, persisted audit chain and one-open-payment protections remain. Human reviewer must be authorized, independent and version-matched.
-- Actual Sandbox OAuth and three USD 18 orders verified. **No completed capture exists in the currently inspected PayPal orders or local DB.** All three are PAYER_ACTION_REQUIRED/zero captures; approvals elapsed. Earlier owner completion reports are not provider evidence. See WEBHOOK_VERIFICATION.md.
-- Webhook ID 12968018AN5251707 verified for current Sandbox credentials and configured locally. Registered URL https://agentpay-guard-example.ngrok-free.app/api/v1/webhooks/paypal has its handler path corrected (PATCH and GET HTTP 200), but the hostname is offline. No genuine event, signed delivery or resend verified. Do not claim a successful payment/webhook demo yet.
-- Existing mock mode and fixture scenarios remain labelled: A low risk, B human review, C policy block, D retries/duplicates, E decline/recovery. These controlled paths are regression demonstrations, not real payment evidence. The fixture provider must be explicitly selected; never silently fall back from genuine Meta.
+A is the genuinely paid low-risk flow. B requires reviewer (independent owner,
+If-Match); C deterministically blocks. D demonstrates replay/duplicate guard.
+E decline/recovery is supported controlled fixture/provider-negative-test behavior;
+**not** verified as a natural real funding decline. Demo modes must remain labelled.
+No invented paid history, reset of financial records or automatic fixture fallback.
 
-## Routes and operating model
+## Useful routes
 
-- `/requests`, `/requests/{id}`: persisted proposal, policy trace, model signals, decision and separate policy/payer keys.
-- `/review`, `/review/{id}`: authorized reviewer decision; internal approval does not move money.
-- `/requests/{id}/checkout`: official PayPal button/redirect fallback.
-- `/checkout/return`, `/checkout/cancel`: guarded capture/recovery or abandonment reporting; callback tokens cannot select/prove an order.
-- `/payments/{id}`: actual capture evidence, retries/reconciliation. Paid requires verified PAID/COMPLETED and matching capture references.
-- `/ledger`, `/policies`: persisted audit and deterministic rules.
-- `/login`: local demo credentials; passcodes are private, distinct and server-only.
-- API: `/api/v1/purchase-requests`, review/checkout routes, `/payments/{id}/capture`, `/payments/{id}/reconcile`, `/audit-events`, `/audit-events/verify`.
-- Public webhook ingress must be **POST /api/v1/webhooks/paypal** only. Local acceptance app: 127.0.0.1:3100. Isolated browser regression: port 3101; never reset the acceptance database.
+- /requests and /requests/{id}: immutable proposal, policy/model explanation, two keys.
+- /review and /review/{id}: authorized human decision.
+- /requests/{id}/checkout: official PayPal button/redirect fallback.
+- /checkout/return and /checkout/cancel: protected capture/recovery or abandonment.
+- /payments/{id}: actual capture, attempts, references/reconciliation.
+- /ledger and /policies: persisted audit and deterministic controls.
+- API prefix /api/v1; capture/reconcile use stored payment IDs, not browser order tokens.
+- Public POST /api/v1/webhooks/paypal; no public operator/session/admin route.
 
-## Required gate before recommendation
+## Restarting development webhooks
 
-Restore the actual existing development tunnel and completed transaction evidence. Verify the current registration URL against its active handler, then genuine signed delivery/redelivery with accurate persisted financial state. If a new transaction is necessary, require a fresh policy approval and manual Sandbox Personal payer login; never capture expired approvals. Ambiguous capture stays CAPTURING and reuses the original provider ID. Complete the genuine capture and terminal repeat verification before changing readiness.
+Existing registration ID **12968018AN5251707**, wildcard subscriptions preserved.
+Last successful callback **https://magnificent-sword-adjustable-exchanges.trycloudflare.com/api/v1/webhooks/paypal** was deliberately shut down after proof
+at 2026-11-05T17:13:14.404Z. Start scripts/webhook-tunnel-proxy.ts (loopback3102) and a new
+cloudflared Quick Tunnel to it; obtain the actual new URL, PATCH only /url on this
+same Sandbox registration, GET verify and test public unsigned 400/admin 404.
+Do not reuse the offline recorded hostname or create duplicate registrations.
+ngrok is installed but lacks auth; account-free Cloudflare works without user setup.
+Original signed receipts contain payer PII: ignored private qa files only, never Git.
 
-Regression totals and evidence boundaries: RELEASE_READINESS_UPDATE.md and WEBHOOK_VERIFICATION.md. Remaining operational limits include demo identities/stateless sessions, caller/webhook-driven reconciliation, public ingress not verified, development dependency advisory and absent production operations/load validation. Do not push, deploy, publish or submit without explicit authorization. Secrets stay in ignored .env.local; do not include raw buyer/event PII in handoff artifacts.
+Retain all disclosed limits in RELEASE_READINESS_UPDATE.md: temporary hosting,
+demo IAM/global-lock scaling, real rare-failure acceptance limits, ignored-event
+audit detail, dev dependency advisory and Webpack-only local validation. Do not
+push, deploy, publish or submit without separate explicit authorization.

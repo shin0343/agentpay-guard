@@ -1,5 +1,7 @@
 # Security audit
 
+Current integration update (2026-11-05T17:12Z): genuine Meta, USD 18.00 completed capture, original signed approval/completion webhooks, supported provider resends and actual desktop/mobile Paid UI are VERIFIED. Verdict READY WITH DISCLOSED LIMITATIONS for the controlled local Sandbox workflow; see RELEASE_READINESS_UPDATE.md and SANDBOX_TRANSACTION_EVIDENCE.md. The original audit/QA findings and historical NOT READY verdict below retain their original dated scope.
+
 2026-11-04 · Baseline: `5838bd1` · Scope: the tracked repository, including
 contracts, route handlers, services, payment adapter, policy/risk engines,
 PostgreSQL migration, authentication, frontend boundary and tests.

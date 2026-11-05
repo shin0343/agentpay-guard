@@ -1,6 +1,6 @@
 # PayPal Sandbox integration
 
-Latest 2026-11-05 UTC: **genuine Sandbox OAuth/order creation verified; capture and signed webhook delivery unverified**. Webhook 12968018AN5251707 is configured and its handler path corrected, but the registered host is offline. See [webhook verification](WEBHOOK_VERIFICATION.md). See [transaction evidence](SANDBOX_TRANSACTION_EVIDENCE.md). HTTP adapter tests use a stub transport. Lifecycle tests use `FakePayPal` from `tests/backend-helpers.ts`; the production runtime always constructs `SandboxPayPal` and has no fake-provider switch.
+Latest 2026-11-05 UTC: **genuine Sandbox capture, original signed webhooks and supported redelivery VERIFIED**. USD 18.00 order 2UE55412FX0764120 / capture 32E66103YN1557633 match DB and actual Paid UI. Webhook 12968018AN5251707 worked through a restricted temporary HTTPS tunnel, now deliberately stopped after verification. See [webhook verification](WEBHOOK_VERIFICATION.md) and [transaction evidence](SANDBOX_TRANSACTION_EVIDENCE.md). HTTP adapter tests use a stub transport. Lifecycle tests use `FakePayPal` from `tests/backend-helpers.ts`; the production runtime always constructs `SandboxPayPal` and has no fake-provider switch.
 
 ## Setup
 
@@ -53,7 +53,7 @@ Verified event IDs are deduplicated. The event payload only identifies a stored 
 5. Enable negative testing on the Sandbox business account before scenario E. Only DEMO_MODE accepts `simulate: instrument_declined`; it sends PayPal-Mock-Response. Retry via the existing same-order approval flow. PayPal's documented v5 immediate recovery uses `actions.restart()`; our result-page/redirect recovery and negative-testing recapturability still require a real Sandbox acceptance run. Do not claim E passed against PayPal until observed.
 6. Exercise redirect/cancel, payment PENDING if available, webhook delivery/retry, expired approval and an interrupted capture in a controlled Sandbox session.
 
-The latest continuation verified real OAuth, creation, order GET, persisted recipient and duplicate/replay behavior. Buyer approval/capture and genuine signed events remain pending; earlier implementation-time lack of credentials is historical. Automated HTTP stubs and fake lifecycle tests remain separate from real provider evidence.
+The latest continuation completed actual OAuth, creation, payer approval, guarded capture, independent GET/DB verification, terminal capture repeat, original signed approval/completion events and supported genuine resends. Actual desktop/mobile Paid screens agree. Earlier missing credentials/pending acceptance are historical. Natural decline/PENDING/network interruption acceptance remains separate from controlled HTTP/SDK/lifecycle tests.
 
 ## Account limitations
 
