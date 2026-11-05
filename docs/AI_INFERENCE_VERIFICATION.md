@@ -6,6 +6,13 @@ is incomplete. The current provider is Meta Model API, Standard `muse-spark-1.3`
 
 ## Current genuine AI evidence
 
+Fresh post-expiry request at 2026-11-05T06:35:51.068Z executed genuine Meta through
+the actual HTTP/policy/PostgreSQL path: muse-spark-1.3, score 8/low, 3593 ms,
+r-3-meta-1. It created a fresh real Sandbox order; payer/capture remain
+pending. The prior expired request was retained with zero captures, no approval
+extension and preserved audit history. See the latest transaction evidence.
+
+
 PayPal continuation at 2026-11-05T05:43:16.194Z additionally executed actual Meta
 through the running application's agent HTTP route and PostgreSQL: Standard
 `muse-spark-1.3`, score 5/low, 1,918 ms, prompt `r-3-meta-1`, all eight policy rules

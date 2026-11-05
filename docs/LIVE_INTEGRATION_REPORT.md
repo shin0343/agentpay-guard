@@ -1,5 +1,38 @@
 # Live integration verification report
 
+## Latest: expired-order reconciliation and fresh manual-approval handoff
+
+2026-11-05 UTC, continuation from bb293fd. **NOT READY; stopped for buyer approval.**
+Actual old-order GET at 2026-11-05T06:32:57.784Z verified PAYER_ACTION_REQUIRED and zero
+captures. Its unchanged 06:13:16.207Z expiry was applied through the existing
+normal GET path: request EXPIRED, local payment VOIDED. Original 34-event prefix
+and head are intact, one expiry event appended; no capture or expiry extension.
+
+Fresh actual Meta muse-spark-1.3 completed at 2026-11-05T06:35:51.068Z, score
+8, 3593 ms; all eight rules passed. Real protected checkout created USD 18.00
+order …12980C at 2026-11-05T06:35:52.291Z. Provider GET verified recipient,
+amount/currency and request/order IDs. Request …P1013A and
+payment …JRCKPA are CHECKOUT_PENDING/AWAITING_PAYER, zero captures or
+attempts. Duplicate and request/checkout replay checks passed, one fresh payment,
+47-event chain valid. Existing 30-minute policy deadline: **2026-11-05T07:05:51.083Z**,
+November 4, 2026 at 11:05:51 PM PST. The buyer receives the fresh URL and instructions to use Sandbox
+Personal credentials and click Pay Now; capture verification is deferred until
+owner confirmation. Existing authenticated return handling remains unchanged.
+
+Current repeated regression: 176/176 tests, six real PG checks, typecheck/lint and
+Webpack build passed. Controlled payment/provider tests are separate from genuine
+Meta + Sandbox creation/GET. No application source/config/policy/UI change needed.
+Actual desktop/mobile old/fresh request checks passed without interception: expired
+has no checkout action, fresh shows real model/risk and waiting, neither claims Paid.
+Four screenshots captured; desktop-fresh/mobile-expired visually inspected, with
+no runtime errors or horizontal overflow.
+Actual webhook-list GET HTTP 200 at 2026-11-05T06:33:59.722Z: zero registrations, missing
+WEBHOOK_ID and public HTTPS listener. No public exposure, push or deployment.
+See current [transaction evidence](SANDBOX_TRANSACTION_EVIDENCE.md) and
+[readiness](RELEASE_READINESS_UPDATE.md). Prior results below are historical.
+
+## Historical bb293fd verification — superseded handoff/deadline
+
 Latest verification: 2026-11-05 UTC / 2026-11-04 America/Los_Angeles.
 Continuation baseline: cf1adb2269239e90c029b0d33bf351be1db65b21.
 
