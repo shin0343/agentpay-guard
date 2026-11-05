@@ -1,5 +1,51 @@
 # Test evidence
 
+## Latest buyer-confirmation verification — 2026-11-05T07:15:52.185Z
+
+**NOT READY — PayPal has not confirmed buyer approval; no capture executed.**
+After owner reported approval, actual owned-order GET still returned
+PAYER_ACTION_REQUIRED. An additional read-only check of all three persisted
+Sandbox orders at 07:14:50.945Z found all three PAYER_ACTION_REQUIRED with zero
+captures; the two older requests remain EXPIRED/local VOIDED. No different approved
+order was found. Final current-order GET at 2026-11-05T07:15:52.185Z confirmed the same.
+This records provider observations without claiming why the buyer session failed.
+
+Current order …24282M / payment …32CEQG: USD 18.00,
+request CHECKOUT_PENDING, payment AWAITING_PAYER, no capture ID/status/attempts.
+At 2026-11-05T07:14:15.274Z, internal ALLOW was valid until 2026-11-05T07:37:52.958Z, trusted quote and
+persisted merchant binding verified. Provider order/recipient/correlation/money
+checks passed, but the payer-approval prerequisite did not. No capture endpoint,
+new attempt, replacement purchase, expiry extension or simulated approval was used.
+
+Independent command executed against actual Sandbox and persisted data:
+
+```sh
+pnpm sandbox:verify pay_<current_saved_payment_id>
+```
+
+It exited **1**, reporting “Sandbox payment is NOT verified completed.” This is an
+expected unpaid-state rejection, not passing capture acceptance. The 60-event
+ledger chain remains valid and its head unchanged; no payment events were invented.
+Actual desktop/mobile browser checks used real GET responses, no interception:
+Waiting for payer, genuine Muse Spark score 5, no Paid, no runtime errors/overflow.
+Two screenshots captured; mobile screenshot visually inspected.
+
+Current targeted regression: **54 passed**, three files (backend, security-settlement,
+paypal-merchant), including expiry/authorization, concurrent/repeated capture and
+unknown timeout protections with controlled payment doubles. No real capture or
+real repeated-capture acceptance is claimed. Earlier 176-test/real-PG results are
+historical and were not rerun in this docs-only continuation.
+
+Capture/amount/currency persistence as a completed transaction, genuine duplicate-
+capture prevention and paid-state UI acceptance remain blocked on actual PayPal
+APPROVED with valid internal authorization. After that condition is observed,
+use the existing guarded capture route, independent verifier and terminal repeat.
+Existing signed webhook acceptance remains unverified; no public deployment,
+source/UI/authorization changes, push or secrets committed.
+
+## Earlier handoff history — superseded by the current verification above
+
+
 2026-11-04 · Baseline `5838bd1` plus the fixes accompanying this report.
 Node `v22.15.1`, pnpm `10.32.1`, macOS; local PostgreSQL at `127.0.0.1:55439`.
 No genuine PayPal Sandbox transaction or OpenAI inference was executed.
