@@ -1,5 +1,71 @@
 # Live integration verification report
 
+## Latest autonomous setup and buyer handoff — 2026-11-05 UTC
+
+**NOT READY; real HTTPS listener working, paused only for Sandbox buyer approval.**
+Baseline 3c33648. This is the local macOS ARM64 workspace with Homebrew, existing
+Next app on 127.0.0.1:3100 and actual local PostgreSQL, not a Linux container.
+Installed ngrok 3.39.13 and cloudflared 2026.10.7 through Homebrew. No ngrok auth
+configuration/environment token existed; actual ngrok start failed ERR_NGROK_4018.
+Resolved the HTTPS requirement autonomously with Cloudflare Quick Tunnel, which
+requires no account/domain. No ngrok credentials or account login were requested.
+
+Actual callback: **https://magnificent-sword-adjustable-exchanges.trycloudflare.com/api/v1/webhooks/paypal**
+Existing Sandbox Webhook ID: **12968018AN5251707**. PATCH and independent GET both
+HTTP 200 at 2026-11-05T08:52:35.553Z; previous example hostname replaced, ID and [*] subscriptions
+preserved. Today's actual event history query returned 200/zero events before the
+fresh transaction, so there was nothing genuine to resend.
+
+Public ingress goes only to scripts/webhook-tunnel-proxy.ts on loopback 3102,
+which forwards exact bounded raw bytes and PayPal headers to the existing handler.
+Public POST webhook → actual app 400 invalid signature with X-Request-Id; public
+GET webhook, /login, /requests and POST /api/v1/session → 404. Console/cookie/agent
+credentials are never forwarded. The actual signature check remains enabled.
+Successful signed receipts will be retained privately (mode 0600) under ignored
+qa/tunnel-live/receipts, with original bytes/base64, hash, signature headers and
+app trace. No genuine signed receipt has yet been observed. Stop temporary tunnel
+and proxy after capture/webhook verification; keep them during this manual handoff.
+Quick Tunnel URL is temporary and changes on restart; never blindly reuse it.
+
+Read-only actual PayPal/DB reconciliation at 08:49:32Z again found the three prior
+orders unapproved/uncaptured. All original approvals elapsed. Normal authenticated
+GET expired the last old request (EXPIRED/local VOIDED); original expiry, zero
+attempts and the audit prefix were preserved. Only local evidence was archived.
+No historical financial record was reset, extended or falsely marked paid.
+
+Fresh request …RPXM8V / payment …DB5VNR created actual USD 18.00
+Sandbox order …28461L at 2026-11-05T08:54:31.816Z. Actual Meta Standard
+muse-spark-1.3 completed score 5, 5094 ms at 2026-11-05T08:54:30.656Z; all eight
+policy checks passed. Provider GET verified merchant binding, request correlation,
+order, USD and amount. Request/checkout replays retained IDs; duplicate proposal
+BLOCKED; exactly one payment for the fresh request; 73-event chain valid.
+Current PayPal PAYER_ACTION_REQUIRED, app CHECKOUT_PENDING/AWAITING_PAYER, zero
+capture attempts/IDs. Internal approval deadline: **2026-11-05T09:24:30.669Z**
+(**November 5, 2026 at 1:24:30 AM PST**), existing unmodified 30-minute policy.
+
+Owner's only required action: open the fresh approval URL supplied in the current
+conversation, preferably a private window to avoid the earlier seller session,
+log in as a Sandbox Personal buyer, verify USD 18.00 and click final Pay Now.
+Then confirm. Do not use a real PayPal account or share a password. No approval
+was simulated and no capture was initiated for this fresh request.
+
+After confirmation: independently GET provider/order and internal expiry/state;
+use guarded capture only if valid, or verify an already-completed return-handler
+capture. Run sandbox:verify, compare DB/audit/frontend, repeat the terminal capture
+as a no-op, then prove genuine signed delivery/correlation/acknowledgement and
+supported resend/dedupe. No success may be inferred from the public unsigned probe.
+
+Current checks: **193 passed**, no failures/skips, 17 files, six actual PostgreSQL
+checks; typecheck/lint/Webpack production build pass. Four new real-socket proxy
+checks prove raw bytes/headers, credential stripping, path/method restriction,
+64KiB bound and failure non-acknowledgement. Existing desktop/mobile E2E passed
+(37 screenshots), explicit fixture AI/intercepted payments. These controlled
+results do not establish a genuine capture or signed event. No frontend/payment
+logic change, provider replacement, production deployment, push or submission.
+
+## Historical verification — previous tunnel blockers superseded by this setup
+
+
 ## Latest webhook integration review — 2026-11-05 UTC, baseline cbf3642
 
 **Verdict: NOT READY.** Actual capture and genuine signed delivery remain unverified.

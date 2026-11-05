@@ -1,5 +1,19 @@
 # Step 7 handoff for Claude Opus 5.5
 
+## Current handoff update (2026-11-05 UTC)
+
+The HTTPS blocker was resolved autonomously. Active callback: https://magnificent-sword-adjustable-exchanges.trycloudflare.com/api/v1/webhooks/paypal;
+existing registration verified and restricted to webhook POST through the local
+proxy. ngrok is installed but lacks authentication; account-free Cloudflare
+Quick Tunnel is operating instead. No owner tunnel/URL setup is needed.
+Fresh genuine Meta score 5 and Sandbox order …28461L are verified, approval
+deadline 2026-11-05T09:24:30.669Z (November 5, 2026 at 1:24:30 AM PST). Paused only for manual buyer approval.
+Capture and genuine signed event remain unverified, so do not start Step 7 as
+integration-complete. Current regressions 193 pass, including six actual PG tests;
+typecheck/lint/Webpack/browser E2E pass. Preserve the active tunnel during pending
+verification and stop it afterward. Earlier blockers below are historical.
+
+
 **Status: preparation only; NOT READY to start Step 7 as integration-complete.**
 No Step 7 work was performed. Preserve the existing Ledger Instrument design and GuardApi boundary; read AGENTS.md, DESIGN_SYSTEM.md and FRONTEND_HANDOFF.md before touching UI.
 
