@@ -216,6 +216,13 @@ Invariants:
 
 ## 5. Concurrency and idempotency invariants
 
+Single-merchant recipient binding (2026-11-05 UTC): optional configured merchant
+ID is enforced when present. Otherwise omit payee on authenticated order creation,
+verify the complete response and persist its merchant ID with the created order.
+All later verification must match that stored binding; a missing binding and
+missing configured merchant fails closed. No transition, authorization or retry
+rule changes. Public payment schemas do not expose this internal field.
+
 1. **At most one open payment per request**: a partial unique index on `payments(purchase_request_id) WHERE status IN ('CREATING','AWAITING_PAYER','APPROVED','CAPTURING','PENDING')`.
 2. **At most one capture in flight**: a conditional update (`WHERE status IN (...)`) is the lock.
 3. **PayPal idempotency**: `PayPal-Request-Id` is deterministic (`ord_<payment_id>`, `cap_<payment_id>_<n>`), so network retries never create a second order or capture.

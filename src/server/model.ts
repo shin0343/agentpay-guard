@@ -23,6 +23,8 @@ export type StoredRequest = PurchaseRequest & {
   retry_extended?: boolean;
 };
 export type StoredPayment = Payment & {
+  /** Recipient bound only from authenticated, verified order creation. */
+  paypal_merchant_id?: string;
   create_claim_until?: number;
   capture_claim_until?: number;
 };

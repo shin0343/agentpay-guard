@@ -10,6 +10,43 @@ const json = (body: unknown, status = 200) =>
     headers: { "paypal-debug-id": "debug" },
   });
 describe("real Sandbox adapter HTTP boundary (stub transport)", () => {
+  it("accepts absent or blank merchant configuration for single-merchant OAuth", () => {
+    expect(
+      config({ ...cfg, PAYPAL_MERCHANT_ID: undefined }).PAYPAL_MERCHANT_ID,
+    ).toBeUndefined();
+    expect(
+      config({ ...cfg, PAYPAL_MERCHANT_ID: "" }).PAYPAL_MERCHANT_ID,
+    ).toBeUndefined();
+  });
+  it("omits payee without a merchant override while preserving quote and idempotency", async () => {
+    const h = await harness();
+    const r = await h.service.create(SCENARIOS[0]!.payload, "agt_research01");
+    const result = await h.service.checkout(r.id, {
+      kind: "operator",
+      id: "op",
+      name: "Operator",
+    });
+    const p = await h.store.tx((s) => s.payments[result.payment.id]!);
+    const o = await h.paypal.get(p.paypal.order_id!);
+    const transport = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        json({ access_token: "private-token", expires_in: 3600 }),
+      )
+      .mockResolvedValueOnce(json(o, 201));
+    await new SandboxPayPal(
+      { ...cfg, PAYPAL_MERCHANT_ID: undefined },
+      transport,
+    ).create(r, p);
+    const init = transport.mock.calls[1]![1]!;
+    const body = JSON.parse(String(init.body));
+    expect(body.purchase_units[0]).not.toHaveProperty("payee");
+    expect(body.purchase_units[0].invoice_id).toBe(r.id);
+    expect(body.purchase_units[0].amount.value).toBe("18.00");
+    expect((init.headers as Record<string, string>)["PayPal-Request-Id"]).toBe(
+      `ord_${p.id}`,
+    );
+  });
   it("hard rejects production hosts and insecure application origins", () => {
     expect(() =>
       config({ ...cfg, PAYPAL_API_BASE: "https://api-m.paypal.com" }),

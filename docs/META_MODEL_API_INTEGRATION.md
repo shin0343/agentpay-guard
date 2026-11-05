@@ -115,7 +115,7 @@ if a required completion/safety check fails. Do not run it on a financial databa
 
 ## Regression and browser boundaries
 
-Final suite: **166 passed, zero failed/skipped**, including 20 Meta cases and five
+Meta implementation suite: **166 passed, zero failed/skipped**, including 20 Meta cases and five
 actual PostgreSQL checks. Typecheck, lint and production Webpack build passed.
 New cases cover explicit key/host/model selection, schema path/pairing, returned
 model identity, malicious instructions, malformed/incomplete/tool/refusal output,

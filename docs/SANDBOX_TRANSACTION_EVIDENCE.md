@@ -1,165 +1,103 @@
 # Sandbox transaction evidence
 
-Latest: 2026-11-05 UTC / 2026-11-04 local · **BLOCKED — no genuine Sandbox transaction.**
+Latest: 2026-11-05 UTC / 2026-11-04 local.
+**Genuine order VERIFIED; payer approval and capture PENDING. Overall NOT READY.**
 
-## Current credential-backed check
+## Genuine evidence
 
-The supplied private client ID/secret were tested against Sandbox OAuth at
-`2026-11-05T04:39:56.562Z`: **HTTP 401, invalid_client, authenticated=false**.
-No token was logged/stored. This is a genuine Sandbox API call, but no authenticated
-order, payer approval or capture was possible. The endpoint was never changed to live.
-The probe used the documented Basic-auth client-credentials exchange.
-[Official authentication reference](https://developer.paypal.com/api/rest/authentication/).
-PAYPAL_MERCHANT_ID and PAYPAL_WEBHOOK_ID remain missing; no public HTTPS listener
-is configured. The buyer account has not been authenticated or verified.
-
-The original pair was preserved. Missing nonfinancial local settings were privately
-completed and Meta inference genuinely passed four final cases. Application startup
-still requires the actual merchant configuration; no merchant was fabricated.
-
-**Next owner action:** in [Sandbox Apps & Credentials](https://developer.paypal.com/dashboard/applications/sandbox),
-verify the client ID/secret belong to the same Sandbox REST app and save them in
-`.env.local`; add that Sandbox business account's PAYPAL_MERCHANT_ID. Do not paste
-the values into chat. Then repeat OAuth and existing checkout. There is **no actual
-payer approval URL yet** because no order exists. A Sandbox personal buyer login
-is needed only after authentication/order creation succeed.
-
-For genuine webhooks, supply an approved nonproduction HTTPS origin and same-app
-subscription ID. No tunnel, public listener or deployment was started; explicit
-authorization is required before exposing a local service. The procedure below
-remains pending and simulator events do not close this gate.
-
-Current totals: one credential-backed OAuth attempt rejected; **zero orders,
-zero approvals/captures and zero genuine signed events**. Meta assessment completion
-or ALLOWED does not change any of those payment facts.
-
-## Historical Step 6.5 evidence
-
-The following evidence table records the earlier run before `.env.local` was
-supplied. Its unauthenticated reachability probe is separate from the current
-credential-backed rejection above. The manual transaction/webhook procedures
-remain unexecuted; use Meta configuration from the current integration guide.
-
-### Historical evidence record
-
-| Field | Actual result |
+| Item | Observed result |
 |---|---|
-| Historical baseline | `a4311c9`, security fixes preserved |
-| Network probe | `2026-11-05T03:44:38.173Z`, unauthenticated Sandbox OAuth HTTP 401 |
-| Genuine order ID | None |
-| Genuine payer approval | None |
-| Genuine capture ID/status | None |
-| Verified captured amount/currency/payee | Not established |
-| Genuine webhook event/signature | None |
-| Actual Paid frontend result | Not established |
-| Genuine transaction count | **0** |
+| Corrected credentials | Actual Sandbox OAuth HTTP 200 at 05:37:21.034Z; token stayed in memory |
+| Merchant setting | Absent; optional for single-merchant Orders v2. No payee supplied; authenticated response recipient durably bound and checked |
+| Actual AI | Meta Standard muse-spark-1.3, score 5/low, completed 05:43:16.194Z, 1,918 ms, prompt r-3-meta-1 |
+| Policy | All eight rules pass; actual request ALLOWED before checkout |
+| Purchase reference | preq_…STDSJ2 |
+| Payment reference | pay_…4XRWYS |
+| Actual order | …37130M, created 05:43:17Z; authenticated GET verified |
+| Amount/currency | USD 18.00, matches persisted quote/order |
+| Recipient/request ownership | Bound merchant, reference_id/custom_id/invoice_id and stored order ID match |
+| Provider order status | PAYER_ACTION_REQUIRED at last read 05:45:58.182Z |
+| Persisted state | Request CHECKOUT_PENDING; payment AWAITING_PAYER |
+| Capture ID/status | None; zero capture attempts; successful capture NOT verified |
+| Duplicates/retries | Original create key replay same request; separate duplicate BLOCKED; checkout key replay same payment/order |
+| Persistence | Exactly one payment for this request; initial audit chain valid, 34 events |
+| Actual UI | Desktop/mobile request and payment screens correctly waiting/not-paid, no API interception; four screenshots inspected |
+| Genuine signed webhook | None; no subscription ID or public HTTPS listener |
 
-No account-backed API call was possible: client ID/secret and business merchant
-ID were missing, and no personal payer session was provided. The webhook ID,
-subscription and public HTTPS listener were also absent. Existing fixtures and
-intercepted “Paid” screenshots must not fill any field above.
+The recipient comes from the Sandbox account owning the REST credentials. Fictional
+catalog merchant Larkspur Data is purchase context, not a third-party payout target.
+No payer PII, cookies, access token, raw response or private merchant ID is committed.
 
-### Step 6.5 security-sensitive scenarios
+## Immediate manual action
 
-| Scenario | Current observed evidence | Remaining real-provider check |
-|---|---|---|
-| Human review gate | Actual local route denies checkout before review; authorized review grants policy key only | Repeat with configured real AI and actual order afterwards |
-| Blocked purchase | Actual local checkout denied; no payment row; automated zero-provider-call assertions pass | Confirm no order appears in the Sandbox app after blocked proposal |
-| Duplicate purchase | New-key semantic duplicate blocks; fixed-key replay returns existing request | Confirm only the original approved request reaches actual checkout |
-| Repeated/concurrent capture | Actual service/HTTP with doubles and PostgreSQL claims: one capture side effect | Repeat protected application capture for a real completed payment; compare actual capture ID/history |
-| Capture timeout | Controlled adapter transport uses actual 15-second timeout, same-ID replay, unknown/backoff and later GET/webhook recovery | Not induced against PayPal; do not count controlled timing as real provider behavior |
-| Payer cancel/funding decline | Browser API/SDK interception and FakePayPal paths pass | Actual buyer cancellation and same-order funding recovery still unverified |
-| Network/auth retry | Missing CSRF/agent checkout denied in actual app; automated transient/failed-replay cases pass | Real network interruption recovery remains unverified |
+The actual approval link was supplied privately in the conversation. Open it,
+sign in as a separate **Sandbox Personal** buyer, verify USD 18.00 and approve.
+Do not send the buyer password in chat. Then tell the verification lead that
+approval completed. Policy approval expires **2026-11-05T06:13:16.207Z**,
+22:13 PST on Nov 4. An expired approval must not be extended by rewriting records.
+No capture will start unless the real PayPal order reports APPROVED. A redirect
+or internal approval alone does not prove that status.
 
-PayPal documents same-ID retry semantics and that a simultaneous second request
-can fail. The application preserves `ord_<payment_id>` and
-`cap_<payment_id>_<attempt>` across retries; an unsuccessful replay cannot resolve
-an earlier ambiguous capture as failed.
-[Official idempotency guidance](https://developer.paypal.com/api/rest/reference/idempotency/).
+The loopback application remains available on port 3100 for this payer return.
+If the return shows app login, approval can still be independently checked through
+PayPal. The acceptance command captures only through the authorized app route:
 
-## Reproducible real transaction procedure — not executed
-
-1. Account owner: open PayPal Developer Dashboard, select Sandbox and use a
-   business seller plus a separate personal buyer. Obtain the business account's
-   merchant ID and the Sandbox REST app's client ID/secret. Do not use the
-   personal payer ID/email as the merchant ID.
-   [Official account setup](https://developer.paypal.com/sandbox-testing/accounts).
-2. Privately create/edit `.env.local` from the existing configuration template,
-   without overwriting any existing values blindly. Configure DATABASE_URL for
-   an isolated acceptance DB, a strong SESSION_SECRET, private distinct reviewer
-   and operator passcodes, DEMO_MODE=true, a valid DEMO_AGENT_KEY, the three PayPal
-   variables, and real AI configuration. Keep PAYPAL_API_BASE pinned to Sandbox.
-   Never use the ignored QA placeholder configuration for provider acceptance.
-3. Use the exact same origin in APP_URL and the browser. HTTP loopback is supported
-   for local payer checkout; genuine webhooks additionally require the HTTPS setup
-   below. Run `pnpm db:migrate` only for the intended acceptance DB. Then:
-
-   ```sh
-   NEXT_PUBLIC_API_MODE=live pnpm build:webpack
-   pnpm start -H 127.0.0.1 -p 3100
-   ```
-
-4. Sign in with the private reviewer passcode. Send A on a fresh acceptance DB.
-   Inspect all eight policy results and actual AI status/model. A normal low-risk
-   completed assessment should allow; record unexpected review as an observed
-   result, rather than changing policy/AI output to force a pass. Any review must
-   be decided by an authorized independent reviewer before checkout.
-5. Select Continue to PayPal. Record the stored payment and real order reference
-   from the application. At this point the request is not Paid. Confirm the
-   actual order amount is USD 18.00 and the payee is the configured Sandbox
-   business. Fictional catalog merchant “Larkspur Data” is purchase context;
-   this app does not pay that third-party company.
-6. The account owner signs in to the official PayPal checkout using the personal
-   Sandbox buyer and approves. Allow the application's existing callback/return
-   path to capture. Do not independently POST capture to PayPal or allocate a new
-   operation ID. If the response is ambiguous, use the existing stored payment's
-   status/recovery path; do not reset or submit a replacement purchase.
-7. Run the existing independent read-only provider verifier with that stored ID:
-
-   ```sh
-   pnpm sandbox:verify pay_<actual_stored_payment_id>
-   ```
-
-   Require exit 0 and matching stored PAID/COMPLETED state, real capture COMPLETED,
-   order/capture IDs, request reference/custom/invoice IDs, amount, USD currency
-   and configured payee. A provider read alone cannot stand in for persisted state.
-8. Reload the payment page on desktop/mobile. Confirm Paid appears only now, both
-   resources/reference evidence agree, and the ledger chain verifies. Compare
-   the seller's Sandbox transaction history. Retain sanitized capture/order ID
-   suffixes or hashes, amount/status, merchant match boolean, UTC timestamps and
-   verification exit result. Exclude cookies, OAuth tokens, payer PII and raw bodies.
-9. Repeat the completed payment's protected application capture request in the
-   same authenticated session (new API Idempotency-Key; same payment). Require
-   identical capture ID/status, unchanged attempts and exactly one charge in
-   Sandbox history. Also replay its original API key and verify no new effect.
-   Repeat B/C/duplicate and actual payer-cancel flows; document each result.
-
-For failure recovery, use the existing E flow only after enabling Sandbox negative
-testing for the test account. It sends PayPal-Mock-Response for a controlled
-INSTRUMENT_DECLINED case; label that evidence as **PayPal-served negative testing**,
-not a natural funding decline. Verify same-order payer recovery and the final
-capture independently. No such request was executed in this run. See
-[the existing integration guide](PAYPAL_INTEGRATION.md) for the negative-test path.
-
-For the repeat check, this browser-console snippet on the application's own
-origin uses the signed-in session without printing credentials. Replace only the
-payment ID after independent completion verification:
-
-```js
-const paymentId = "pay_<actual_stored_payment_id>";
-const csrf = document.cookie.split("; ").find(x => x.startsWith("apg_csrf="))?.slice(9);
-const response = await fetch(`/api/v1/payments/${encodeURIComponent(paymentId)}/capture`, {
-  method: "POST", credentials: "same-origin",
-  headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf ?? "",
-    "Idempotency-Key": crypto.randomUUID() },
-  body: "{}",
-});
-const result = await response.json();
-console.log({ http: response.status, payment: result.payment?.status,
-  request: result.purchase_request?.status,
-  captureSuffix: result.payment?.paypal.capture_id?.slice(-6),
-  attempts: result.payment?.attempts.length });
+```sh
+# Already executed: create once and inspect; local evidence prevents a second create.
+PAYPAL_LIVE_VERIFY=true pnpm exec tsx --env-file=.env.local scripts/verify-live-paypal.ts create
+PAYPAL_LIVE_VERIFY=true pnpm exec tsx --env-file=.env.local scripts/verify-live-paypal.ts inspect
+# Pending actual buyer approval:
+PAYPAL_LIVE_VERIFY=true pnpm exec tsx --env-file=.env.local scripts/verify-live-paypal.ts capture
+pnpm sandbox:verify pay_<actual_saved_payment_id>
 ```
+
+The existing read-only sandbox:verify must exit 0 with provider COMPLETED capture,
+matching stored PAID/COMPLETED, amounts/IDs/recipient and capture ID. Capture mode
+also repeats the terminal protected app operation with a new API key and requires
+the same capture. These capture steps have NOT passed yet. After completion,
+reload actual desktop/mobile payment screens and inspect Sandbox seller history.
+
+## Security-sensitive verification boundaries
+
+| Scenario | Evidence |
+|---|---|
+| Review/blocked checkout | Real configured application HTTP 409, no new payment/capture |
+| Unauthorized capture / no CSRF | Real application HTTP 403 before PayPal operations |
+| Client-selected order | Real application HTTP 422 |
+| Same create and checkout key | Genuine app+Sandbox order, same persisted resources |
+| New-key duplicate purchase | Genuine app policy BLOCKED, links original |
+| Recipient substitution / explicit config / missing binding | Regression doubles and real PostgreSQL binding persistence; no real provider tampering |
+| Concurrent/repeated capture, ambiguous timeout/replay | Automated controlled transport and PostgreSQL tests pass; real completed-order repeat still pending |
+| Actual buyer cancel/decline/network interruption | Not executed against PayPal; existing browser/transport tests are labelled simulations |
+
+The real-order capture probe refused before calling capture while PayPal reported
+PAYER_ACTION_REQUIRED (exit 1). Independent sandbox:verify also exited 1 with
+“Sandbox payment is NOT verified completed.” These are expected unpaid-state
+rejections, not passing capture acceptance. No capture was sent.
+
+Current regression: **176 passed**, six real PostgreSQL checks, 20 Meta tests;
+typecheck/lint/Webpack build and existing browser E2E passed. Prior 04:39:56Z
+OAuth 401 invalid_client was a real failure with the earlier secret, now resolved.
+Prior zero-order evidence is historical, not the current state.
+
+## Merchant requirement and references
+
+OAuth uses client ID/secret, without merchant ID. Orders create documents optional
+payee; the single-merchant request may omit it. Application ownership checks remain
+mandatory: creation pins a trusted recipient, later GET/capture/settlement compare
+it. Configured merchant ID continues to constrain both creation and settlement.
+Unbound legacy records without a configured recipient fail closed; reconcile
+manually rather than learning ownership from an arbitrary later read.
+
+- [Official OAuth](https://developer.paypal.com/reference/get-an-access-token/)
+- [Orders v2 create](https://developer.paypal.com/api/orders/v2/orders-create)
+- [Order payee definition](https://developer.paypal.com/sdk/orders/v2/definitions/order/)
+- [Idempotency](https://developer.paypal.com/api/rest/reference/idempotency/)
+
+Preserved ord_<payment_id> / cap_<payment_id>_<attempt>, unique order/capture
+ownership, server authorization/CSRF, quote verification and policy expiry. An
+ambiguous capture remains CAPTURING/unknown and cannot become a new charge attempt
+until authoritatively reconciled. No production endpoint, tunnel or deployment.
 
 ## Genuine webhook delivery procedure — not executed
 

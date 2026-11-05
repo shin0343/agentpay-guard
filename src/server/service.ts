@@ -34,7 +34,7 @@ export class GuardService {
     readonly store: Store,
     readonly paypal: PayPal,
     private risk: RiskAssessor,
-    readonly merchant: string,
+    readonly merchant: string | undefined,
     readonly demo: boolean,
   ) {}
   request(s: StoreState, rid: string, p: Principal): StoredRequest {
@@ -545,7 +545,19 @@ export class GuardService {
     const { r, pay } = claim;
     try {
       const order = await this.paypal.create(r, pay);
-      verifyOrder(order, r, pay, this.merchant);
+      // With no explicit payee, PayPal routes this server-created order to the
+      // OAuth merchant. Bind only this authenticated create response, never a
+      // client callback or subsequent GET. Recovered creates use the same ID.
+      const merchant =
+        pay.paypal_merchant_id ??
+        this.merchant ??
+        order.purchase_units[0]!.payee.merchant_id;
+      verifyOrder(
+        order,
+        r,
+        { ...pay, paypal_merchant_id: merchant },
+        this.merchant,
+      );
       requireState(
         ["CREATED", "PAYER_ACTION_REQUIRED", "APPROVED"].includes(order.status),
         order.status,
@@ -571,6 +583,7 @@ export class GuardService {
           "CREATING",
         ]);
         payment = paymentTransition(payment, "created", now());
+        payment.paypal_merchant_id = merchant;
         payment.paypal = {
           ...payment.paypal,
           order_id: order.id,

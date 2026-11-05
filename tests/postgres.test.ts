@@ -8,6 +8,8 @@ import { vi } from "vitest";
 import { harness } from "./backend-helpers";
 import { PurchaseRequest, RequestWithPayment } from "@/contract";
 import { verify } from "@/server/audit/ledger";
+import { GuardService } from "@/server/service";
+import { SafeRiskAssessor } from "@/server/risk/assessor";
 const enabled = process.env.APG_POSTGRES_TEST === "true";
 const url = process.env.TEST_DATABASE_URL;
 describe.skipIf(!enabled)("real PostgreSQL migration and concurrency", () => {
@@ -38,6 +40,62 @@ describe.skipIf(!enabled)("real PostgreSQL migration and concurrency", () => {
   };
   afterAll(async () => {
     await Promise.all(stores.map((s) => s.pool.end()));
+  });
+  it("recipient binding survives a new connection without a configured merchant", async () => {
+    // Isolate this lifecycle from other tests' fake PayPal order IDs.
+    const bindingUrl = new URL(url!);
+    bindingUrl.searchParams.set("options", `-c search_path=${schema}_binding`);
+    const bindingStore = new PostgresStore(bindingUrl.toString());
+    stores.push(bindingStore);
+    await stores[0]!.pool.query(`CREATE SCHEMA ${schema}_binding`);
+    await bindingStore.pool.query(
+      await readFile(
+        new URL("../migrations/001_foundation.sql", import.meta.url),
+        "utf8",
+      ),
+    );
+    const h = await harness(bindingStore);
+    const service = new GuardService(
+      h.store,
+      h.paypal,
+      new SafeRiskAssessor("fixture"),
+      undefined,
+      true,
+    );
+    const input = structuredClone(SCENARIOS[0]!.payload);
+    input.items[0]!.quantity = 4;
+    input.amount.value = "72.00";
+    const r = await service.create(input, "agt_research01");
+    expect(r.status).toBe("IN_REVIEW"); // Modified quote has no exact AI fixture.
+    const reviewed = await h.call(`purchase-requests/${r.id}/reviews`, {
+      method: "POST",
+      version: r.version,
+      body: { action: "approve" },
+    });
+    expect(reviewed.status).toBe(200);
+    const actor = { kind: "operator", id: "op", name: "Operator" } as const;
+    const result = await service.checkout(r.id, actor);
+    const freshStore = new PostgresStore(bindingUrl.toString());
+    stores.push(freshStore);
+    expect(
+      await freshStore.tx(
+        (s) => s.payments[result.payment.id]!.paypal_merchant_id,
+      ),
+    ).toBe("MERCHANT");
+    const fresh = new GuardService(
+      freshStore,
+      h.paypal,
+      new SafeRiskAssessor("fixture"),
+      undefined,
+      true,
+    );
+    const order = h.paypal.orders.get(result.payment.paypal.order_id!)!;
+    order.status = "APPROVED";
+    order.purchase_units[0]!.payee.merchant_id = "ATTACKER";
+    await expect(fresh.capture(result.payment.id, actor)).rejects.toMatchObject(
+      { code: "PAYPAL_REJECTED" },
+    );
+    expect(h.paypal.captures).toBe(0);
   });
   it("persistent rows, immutable audit and API idempotency survive fresh connections", async () => {
     const store = open();

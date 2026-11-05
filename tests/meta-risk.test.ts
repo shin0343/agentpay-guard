@@ -313,7 +313,7 @@ describe("Meta Responses provider boundary", () => {
         ...cfg,
         RISK_PROVIDER: "meta",
         MODEL_API_KEY: "test-only",
-        PAYPAL_MERCHANT_ID: "",
+        PAYPAL_CLIENT_SECRET: "",
       }),
     ).toThrow();
   });

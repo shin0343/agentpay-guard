@@ -21,7 +21,7 @@ export const Order = z.object({
         reference_id: z.string(),
         custom_id: z.string(),
         invoice_id: z.string(),
-        payee: z.object({ merchant_id: z.string() }),
+        payee: z.object({ merchant_id: ProviderId }),
         amount: z.object({ currency_code: z.string(), value: z.string() }),
         payments: z
           .object({
@@ -176,7 +176,9 @@ export class SandboxPayPal implements PayPal {
           reference_id: r.id,
           custom_id: r.id,
           invoice_id: r.id,
-          payee: { merchant_id: this.cfg.PAYPAL_MERCHANT_ID },
+          ...(this.cfg.PAYPAL_MERCHANT_ID
+            ? { payee: { merchant_id: this.cfg.PAYPAL_MERCHANT_ID } }
+            : {}),
           description: `${r.merchant.name} via AgentPay Guard`.slice(0, 127),
           amount: { ...r.amount, breakdown: { item_total: r.amount } },
           items: r.items.map((i) => ({
@@ -287,16 +289,19 @@ export function verifyOrder(
   order: Order,
   r: StoredRequest,
   p: StoredPayment,
-  merchant: string,
+  merchant: string | undefined,
 ) {
   const u = order.purchase_units[0]!;
+  const expectedMerchant = p.paypal_merchant_id ?? merchant;
   if (
+    !expectedMerchant ||
+    (merchant !== undefined && expectedMerchant !== merchant) ||
     (order.id !== p.paypal.order_id && p.paypal.order_id !== null) ||
     order.intent !== "CAPTURE" ||
     u.reference_id !== r.id ||
     u.custom_id !== r.id ||
     u.invoice_id !== r.id ||
-    u.payee.merchant_id !== merchant ||
+    u.payee.merchant_id !== expectedMerchant ||
     u.amount.currency_code !== r.amount.currency_code ||
     u.amount.value !== r.amount.value ||
     p.amount.value !== r.amount.value ||

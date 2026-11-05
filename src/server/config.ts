@@ -36,7 +36,13 @@ export function config(env: Record<string, string | undefined> = process.env) {
         .default("https://api-m.sandbox.paypal.com"),
       PAYPAL_CLIENT_ID: z.string().min(1),
       PAYPAL_CLIENT_SECRET: z.string().min(1),
-      PAYPAL_MERCHANT_ID: z.string().min(1),
+      PAYPAL_MERCHANT_ID: z.preprocess(
+        (v) => (v === "" ? undefined : v),
+        z
+          .string()
+          .regex(/^[A-Z0-9]{1,36}$/)
+          .optional(),
+      ),
       PAYPAL_WEBHOOK_ID: z.string().optional(),
       DEMO_MODE: z.enum(["true", "false"]).default("false"),
       DEMO_PASSCODES: z.string().default(""),

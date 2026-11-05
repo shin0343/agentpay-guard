@@ -6,6 +6,15 @@ is incomplete. The current provider is Meta Model API, Standard `muse-spark-1.3`
 
 ## Current genuine AI evidence
 
+PayPal continuation at 2026-11-05T05:43:16.194Z additionally executed actual Meta
+through the running application's agent HTTP route and PostgreSQL: Standard
+`muse-spark-1.3`, score 5/low, 1,918 ms, prompt `r-3-meta-1`, all eight policy rules
+passed. Request suffix STDSJ2 then created a genuine USD 18.00 Sandbox order.
+Actual desktop/mobile GET-based request/payment screens displayed this evaluation
+without interception. Payer approval/capture remain pending; AI completion is not
+payment completion. Current regression total is 176; the earlier 166-test and
+recorded-data-display results below are retained historical evidence.
+
 | Required case | Actual observation | Verification |
 |---|---|---|
 | Normal within limits | Completed, score 5/low, ALLOWED | Genuine Meta + existing service/policy + PostgreSQL |

@@ -1,84 +1,110 @@
 # Live integration verification report
 
 Latest verification: 2026-11-05 UTC / 2026-11-04 America/Los_Angeles.
-Baseline: `19cd3a79a12327c679afb1ea6242086d671a396f`.
+Continuation baseline: cf1adb2269239e90c029b0d33bf351be1db65b21.
 
-**Verdict: NOT READY. Meta inference is now genuinely verified.** PayPal Sandbox
-OAuth returned `401 invalid_client`; merchant configuration and signed webhook
-delivery remain unavailable. No real order, payer approval or capture is claimed.
+**Verdict: NOT READY — real order exists; payer approval/capture pending.**
+Corrected credentials obtained genuine Sandbox OAuth HTTP 200 at 05:37:21.034Z.
+A genuine USD 18.00 order was created through the application's authenticated
+HTTP route at 05:43:17Z, with actual Meta inference and PostgreSQL persistence.
+No capture or signed webhook is claimed.
 
-## Current Meta verification
+## Merchant configuration correction
 
-The existing fetch-based Responses client now supports explicit Meta selection,
-MODEL_API_KEY and Standard `muse-spark-1.3`. No SDK/dependency or frontend change was
-needed. Four final actual Meta evaluations completed through GuardService and
-PostgreSQL: normal 5/ALLOW, unusual 65/REVIEW, hard-policy blocked 95/BLOCK, and
-description injection 82/REVIEW. The provider-reported model, validated response
-IDs and `r-3-meta-1` are recorded; the 21-event ledger verified, with no payment rows.
-An additional real `risk:verify` exited 0 without changing the persisted decision.
+Official OAuth client-credentials authentication needs client ID and secret.
+Orders v2 create accepts optional payee. PAYPAL_MERCHANT_ID was an application
+setup requirement, not a requirement of these single-merchant API operations.
+[OAuth](https://developer.paypal.com/reference/get-an-access-token/),
+[Orders v2 create](https://developer.paypal.com/api/orders/v2/orders-create).
 
-Two actual integration problems were diagnosed: low reasoning exceeded the existing
-eight-second budget on complex inputs; and model evidence paths included the
-`untrusted_purchase` wrapper, which the server correctly rejected. Meta now uses
-official minimal reasoning and a canonical-path/paired-null schema. The shared
-grounding validator and all payment protections remain unchanged. Earlier failures
-are retained and are not passing acceptance results.
+Configuration now accepts an absent/blank merchant ID. If supplied, it remains
+an enforced recipient constraint and explicit payee. If absent, the create body
+omits payee and the authenticated response's nonempty merchant ID is durably bound
+to the payment. Every later GET, capture result and settlement must match that
+binding. Missing legacy bindings require the configured merchant; a later GET
+cannot establish a new recipient. Configured recipient drift fails closed.
+The internal JSONB field needs no migration and is excluded from public schemas.
+API/state-machine docs were amended before code. Authorization, policy, capture
+transitions, unknown-timeout handling and idempotency IDs remain unchanged.
 
-Detailed sanitized references, timestamps, commands and scope are in
-[META_MODEL_API_INTEGRATION.md](META_MODEL_API_INTEGRATION.md).
+## Genuine current flow
 
-## Current environment and PayPal boundary
+Request suffix STDSJ2 / payment suffix 4XRWYS / order suffix 37130M.
+The actual provider reported muse-spark-1.3, score 5, low risk, latency 1,918 ms
+at 05:43:16.194Z. All eight deterministic checks passed. Request creation replay
+returned the same ID; a new-key semantic duplicate was BLOCKED. Checkout replay
+returned the same payment. Exactly one payment exists for this request.
 
-The supplied `.env.local` is ignored, untracked and owner-readable only. MODEL_API_KEY
-works. The supplied PayPal ID/secret were sent only to Sandbox OAuth at
-`2026-11-05T04:39:56.562Z`; HTTP 401 / invalid_client was returned. No access token
-was logged or saved. The pair was preserved, not replaced by a claimed working key.
-PAYPAL_MERCHANT_ID and PAYPAL_WEBHOOK_ID are missing; no public HTTPS listener exists.
-The account owner was asked to correct the Sandbox app pair and supply merchant ID.
+Independent authenticated order GET matched the persisted recipient, request
+reference/custom/invoice IDs, amount and USD currency. Current provider state:
+PAYER_ACTION_REQUIRED; app CHECKOUT_PENDING / AWAITING_PAYER, zero captures or
+attempts. Initial verification found a valid 34-event chain. Internal approval
+expires at 06:13:16.207Z (22:13 PST on Nov 4). The owner was given the actual
+approval URL for a separate Sandbox Personal buyer; no password was requested.
+See [transaction evidence](SANDBOX_TRANSACTION_EVIDENCE.md) for the pending action.
 
-Missing nonfinancial settings were completed locally: explicit Meta/model selection,
-loopback APP_URL, isolated local PostgreSQL, private session secret and distinct demo
-passcodes/agent key. Only the probe-created local research-agent disabled key was
-provisioned with a hash. No historical financial state or authorization logic changed.
-Application configuration remains strict: missing merchant prevents API
-initialization. No merchant ID was invented. No public listener, tunnel or deployment was made.
+Actual configured-app denial checks passed: IN_REVIEW/BLOCKED checkout HTTP 409,
+agent capture and missing-CSRF capture HTTP 403, client-selected order HTTP 422.
+They produced zero capture attempts. Actual desktop/mobile request and payment
+screens used real GET responses with no interception: correct waiting/not-paid
+state, separate approval keys, genuine model explanation, no runtime errors or
+horizontal overflow. Four screenshots were captured and inspected locally.
+The pre-approval capture tool refused without sending capture; the independent
+sandbox:verify exited 1 because completion is unverified. No capture success is
+claimed. Twelve existing accessibility scans also passed with zero WCAG A/AA
+violations on the separate regression instance.
 
-## Current regression and display checks
+## Regression verification
 
-Typecheck, lint, **166 tests** (zero failed/skipped, including 20 Meta and five actual
-PostgreSQL tests) and production Webpack build passed. Payment service, policy,
-authorization, state transitions, PayPal client, migrations and frontend source
-remain identical to `19cd3a7`; the ambiguous-capture fix is preserved.
+Typecheck, lint, production Webpack build and **176 tests** passed, zero failed or
+skipped, 15 files, including 20 Meta tests and six real PostgreSQL checks. Ten added
+checks cover optional configuration/body, persisted recipient binding and
+substitution/config-drift/legacy/malformed-recipient rejection. A changed Meta test
+now correctly requires the client secret rather than the optional merchant field.
+Initial test-driver failures were corrected: attempt field is status, changed
+quotes need authorized review, and new PG lifecycle has its own schema to avoid
+collisions between fake order IDs. A scratch browser driver was moved outside the
+repo after it was included in lint; final lint passed. None of these harness
+failures were counted as passing evidence.
 
-Existing desktop/mobile E2E passed against a separate explicit regression environment:
-actual local Next/PostgreSQL routes, fixture AI and intercepted payment/SDK boundaries.
-Those results are not genuine PayPal or Meta acceptance. Recorded genuine Meta
-evaluations were also checked through the unchanged frontend with intercepted GET
-display responses; that boundary is labelled on screenshots. It verifies rendering
-of real model/score/explanation data, not the incomplete production-runtime path.
-The final recorded-data run passed 8 desktop/mobile checks with 12 screenshots and
-zero runtime errors/overflow. Initial exact-text selectors were corrected to match
-the existing model metadata line and combined `score / 100`. Screenshot inspection
-also caught a missing `object:list` in the display driver's list envelopes; that
-driver was corrected and now asserts ledger loading and no inline contract errors.
-No application contract or UI was altered.
+Existing desktop/mobile E2E passed on the separate disposable database/port 3101:
+real local app/DB, explicitly fixture AI and intercepted payment/SDK boundaries,
+37 screenshots. These are regression tests, not genuine payment acceptance.
+The actual acceptance instance remains on loopback port 3100 for payer return.
+No UI source, authorization, policy, transitions, migrations or dependencies changed.
 
-Final suite command (private connection replaced by placeholder):
+Commands executed (private connection value replaced):
 
 ```sh
 pnpm typecheck
 pnpm lint
-APG_POSTGRES_TEST=true TEST_DATABASE_URL='<disposable-regression-DB>' \
-  pnpm exec vitest run --reporter=json --outputFile=qa/meta-live/regression-tests.json
+APG_POSTGRES_TEST=true TEST_DATABASE_URL='<disposable-regression-DB>' pnpm test
 pnpm build:webpack
+PAYPAL_LIVE_VERIFY=true pnpm exec tsx --env-file=.env.local scripts/verify-live-paypal.ts create
+PAYPAL_LIVE_VERIFY=true pnpm exec tsx --env-file=.env.local scripts/verify-live-paypal.ts inspect
 ```
 
-Ignored `qa/meta-live/` retains actual provider diagnostics, initial/final risk
-evidence, CLI output, regression JSON/build logs and browser results. No provider
-key, OAuth token, raw provider body or hidden reasoning is included in committed
-evidence. See [AI verification](AI_INFERENCE_VERIFICATION.md),
-[Sandbox evidence](SANDBOX_TRANSACTION_EVIDENCE.md) and
-[readiness](RELEASE_READINESS_UPDATE.md). Genuine payment/webhook gates remain open.
+The opt-in acceptance script uses protected HTTP routes, stable operation IDs,
+real provider GET and persisted state; it refuses a second create when its local
+evidence already exists. capture mode refuses unapproved orders. All acceptance
+artifacts are under ignored qa/paypal-live; .env.local stays ignored/owner-readable,
+with no secrets or OAuth tokens in committed evidence. Nothing was pushed/deployed.
+
+## Retained Meta acceptance
+
+The preceding cf1adb2 run genuinely completed four final Meta scenarios through
+policy/service/PostgreSQL: normal 5/ALLOW, unusual 65/REVIEW, policy-blocked 95/BLOCK
+and description injection 82/REVIEW. Real timeouts and invalid evidence failed
+conservatively. Its 166-test baseline and recorded-data display checks remain
+historical, superseded by the current 176-test run and actual runtime display.
+The earlier 04:39:56Z OAuth 401 invalid_client is superseded by the owner's secret
+correction and current successful authentication/order creation. It is not a
+remaining blocker. Missing PAYPAL_MERCHANT_ID is also no longer a blocker.
+
+PAYPAL_WEBHOOK_ID/public HTTPS listener remain absent; no genuine signature/event
+delivery was tested and no service was exposed. Prior scoped historical assessment
+found no relevant failed-after-ambiguous records locally; external deployments
+still require inventory if they exist. See [readiness](RELEASE_READINESS_UPDATE.md).
 
 ## Historical Step 6.5 record (03:41–04:02 UTC)
 
