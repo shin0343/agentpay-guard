@@ -2,6 +2,8 @@
 
 > Give AI agents spending power. Keep humans in control.
 
+Source: [shin0343/agentpay-guard](https://github.com/shin0343/agentpay-guard).
+
 AgentPay Guard is a payment control layer for AI agents, built for the PayPal AI Hackathon 2026.
 An agent proposes a purchase through an API. Deterministic policies decide. A Meta AI model adds
 an advisory risk assessment, and it can only add caution. A named human reviews when policy requires it.

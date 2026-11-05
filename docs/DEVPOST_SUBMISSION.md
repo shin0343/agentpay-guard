@@ -158,7 +158,7 @@ meta-model-api · muse-spark · zod · tailwindcss · vitest · playwright
 
 ## "Try it out" links
 
-- GitHub: **[YOU]** `https://github.com/<you>/agentpay-guard`
+- GitHub: https://github.com/shin0343/agentpay-guard
 - Demo video: **[YOU]** YouTube URL (public)
 
 ## Testing instructions (for judges)
@@ -195,7 +195,7 @@ Created from scratch during the submission period. First commit: 2026-11-03.
 > 0:00 Problem · 0:10 Product · 0:25 Low-risk · 0:52 Human review · 1:09 Approval ·
 > 1:26 Injection block · 1:47 Sandbox payment · 2:09 Webhooks & ledger · 2:32 Close
 >
-> Code: <GitHub URL>
+> Code: https://github.com/shin0343/agentpay-guard
 
 These chapters describe `qa/step7-video/agentpay-guard-demo-final.mp4` (158.867 s), with 45 English
 cues in its matching SRT. All continuity defects are resolved. **Do not upload the current Samantha
