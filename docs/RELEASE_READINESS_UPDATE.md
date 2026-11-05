@@ -1,49 +1,35 @@
 # Release readiness update
 
-2026-11-05 UTC / November 4, 2026 PST. Continuation baseline bb293fd.
+2026-11-05T07:07Z continuation from 2e6e420. **Verdict: NOT READY.**
+Stopped at the requested manual buyer approval stage. Payment success is unverified.
 
-**Verdict: NOT READY.** Fresh genuine order prepared; work stops at the requested
-manual buyer interaction. Payer approval/capture and genuine signed delivery
-remain unverified. No order is represented as paid.
-
-| Item | Verified result |
+| Item | Genuine verified result |
 |---|---|
-| Expired first order | Actual PayPal GET: PAYER_ACTION_REQUIRED, zero captures; normal app expiry EXPIRED/local VOIDED; original expiry and audit head preserved |
-| Fresh Meta evaluation | Actual Standard muse-spark-1.3, score 8, 3593 ms; all eight policy checks pass |
-| Fresh genuine order | USD 18.00, suffix 12980C, created 2026-11-05T06:35:52.291Z; owned GET verified |
-| Fresh approval deadline | 2026-11-05T07:05:51.083Z; November 4, 2026 at 11:05:51 PM PST; existing unmodified 30-minute default |
-| Current payment | CHECKOUT_PENDING / AWAITING_PAYER; no capture ID or attempts |
-| Persistence / duplicate safety | One fresh payment; duplicate BLOCKED; request/checkout replays same resources; 47-event chain valid |
-| Automated verification | 176 passed, zero failures/skips, six real PG tests; typecheck/lint/Webpack production build pass |
-| Actual browser checks | Desktop/mobile expired/fresh request views pass without interception; expired cannot continue, fresh waiting/not paid; four screenshots captured |
-| Genuine webhook readiness | Actual registered-webhooks GET HTTP 200, zero listeners; no WEBHOOK_ID or public HTTPS callback |
-| Product/security | No frontend, policy, auth, transition, idempotency, merchant-binding or timeout-handling source changes |
+| Prior order …12980C | PayPal PAYER_ACTION_REQUIRED, zero captures; internal approval expired 07:05:51.083Z |
+| Prior persistence | Normal expiry → EXPIRED / local VOIDED; no capture attempts, original expiry and 47-event audit prefix preserved; one expiry event appended |
+| Fresh AI / policy | Actual Meta muse-spark-1.3, score 5, 2179 ms; all eight deterministic checks pass |
+| Fresh order | USD 18.00, …24282M, created 2026-11-05T07:07:54.006Z; actual owned GET validates recipient/IDs/money |
+| Fresh authorization deadline | 2026-11-05T07:37:52.958Z; November 4, 2026 at 11:37:52 PM PST; unmodified 30-minute default |
+| Current payment | CHECKOUT_PENDING / AWAITING_PAYER, PayPal PAYER_ACTION_REQUIRED; no capture or attempts |
+| Duplicate safety | Same request/checkout key replays preserve resources; semantic duplicate BLOCKED; one fresh payment; 60-event chain valid |
+| Current regressions | 176 passed, zero failures/skips, six actual PostgreSQL checks; typecheck/lint passed; provider/payment doubles are not real capture evidence |
 
-## Remaining actions
+Next: owner opens the fresh approval URL supplied in the conversation, logs in
+with a Sandbox Personal buyer, verifies USD 18.00 and clicks final Pay Now before
+the stated deadline, then confirms. Only then resume agent capture work: read
+PayPal, revalidate authorization/expiry/quote/state, use the existing protected
+capture route if eligible, independently verify capture against provider/DB/audit/
+frontend, and confirm terminal repeated capture is a no-op. If return handling
+already completed payment, verify that payment; never create a duplicate.
 
-1. **P1: manual buyer approval and capture acceptance.** Owner opens the fresh
-   URL provided in the conversation, uses a Sandbox Personal buyer, verifies
-   USD 18.00 and clicks Pay Now before the deadline above. Reply after approval.
-   Then revalidate all guards, capture only if eligible, independently verify
-   provider + persisted capture, compare actual frontend and check duplicate
-   capture returns the same result. Capture is deferred until that confirmation.
-2. **P1 if enabled: genuine signed webhook.** Authorize a nonproduction public
-   HTTPS listener, register it on this Sandbox REST app, configure its ID, restart
-   and verify real event signature/mapping/redelivery. No listener was created or
-   service exposed. Simulator/controlled tests do not establish genuine delivery.
-3. **Conditional historical external deployment.** Earlier local-only inventory
-   found no relevant failed-after-ambiguous financial history; inventory any
-   external deployment if one exists. This continuation retained the expired
-   order and its audit history without rewriting its approval.
-4. **P2 live recovery limits.** Actual payer cancellation/funding failure, pending
-   capture and induced network interruption remain unverified; controlled
-   regression coverage is distinct from provider acceptance. Existing public
-   ingress/demo-session/operational limitations remain disclosed.
+No genuine signed webhook evidence yet. The last actual registered-webhooks GET
+at 06:33:59.722Z found zero subscriptions. PAYPAL_WEBHOOK_ID/public HTTPS callback
+were absent; no new setup or deployment was performed. Remaining minimum: an
+authorized nonproduction HTTPS listener, same-app registration and configured ID,
+then genuine signature/mapping/redelivery acceptance. Earlier build/browser/axe
+passes remain historical; this continuation did not rerun those unchanged paths.
 
-The unchanged 30-minute policy window is provided afresh; no expired approval was
-extended and no policy/config bypass introduced. Private environment values remain
-ignored and uncommitted. No push, public deployment or submission.
-
-[Transaction evidence](SANDBOX_TRANSACTION_EVIDENCE.md) records precise real versus
-simulated boundaries and the remaining webhook/capture procedure.
-**Do not mark Step 7 integration-complete before genuine capture verification.**
+No product source, frontend design, payment guard or configuration change. Expired
+orders/audit history retained; private environment ignored and uncommitted.
+No push or deployment. Do not mark integration complete until actual completed
+capture is independently verified. See [current transaction evidence](SANDBOX_TRANSACTION_EVIDENCE.md).

@@ -1,5 +1,57 @@
 # Live integration verification report
 
+## Current handoff — 2026-11-05T07:07Z continuation from 2e6e420
+
+**NOT READY: genuine new order verified; stopped before manual buyer interaction.**
+At 2026-11-05T07:07:07.683Z, actual Sandbox GET for prior order …12980C reported
+PAYER_ACTION_REQUIRED, zero captures. Database capture ID was absent and attempts zero;
+internal approval expired at 2026-11-05T07:05:51.083Z. It was not payer-approved at this
+read. Normal authenticated request GET applied EXPIRED / local VOIDED without any
+capture or arbitrary expiry extension. The original 47-event prefix/head remains
+intact; one expiry event was appended. Local VOIDED does not claim PayPal voided it.
+Its financial/audit records remain in the database; only the ignored evidence
+pointer was archived as transaction-expired-RCKPA.json.
+
+Fresh request …TK4JHA / payment …32CEQG
+created actual Sandbox order …24282M at 2026-11-05T07:07:54.006Z for USD 18.00.
+Real Standard muse-spark-1.3 inference completed 2026-11-05T07:07:52.943Z, score
+5/low, 2179 ms, prompt r-3-meta-1; all eight deterministic
+policy checks passed. Authenticated provider GET verified stored order/recipient,
+reference/custom/invoice IDs, amount and currency. Current state is
+PAYER_ACTION_REQUIRED / CHECKOUT_PENDING / AWAITING_PAYER, no capture ID or attempts.
+Same-key request/checkout replays returned the same resources; new-key duplicate
+was BLOCKED; one payment exists for this fresh request. 60-event audit chain valid.
+
+**Fresh deadline: 2026-11-05T07:37:52.958Z (November 4, 2026 at 11:37:52 PM PST).** The existing 30-minute policy is
+unchanged. Use only the new URL supplied in this conversation, log in as a Sandbox
+Personal buyer, verify USD 18.00 and click final Pay Now. No approval was simulated
+and no fresh capture command was run. Owner confirmation is required before the
+agent resumes capture verification. The existing authenticated return handler may
+perform its normal guarded capture after genuine payer approval; it is unchanged.
+
+After owner confirmation, independently GET the stored order and revalidate live
+internal authorization/expiry/state/quote. Capture through the protected backend
+only if eligible. If already captured by the return handler, verify rather than
+creating a replacement; terminal repeat must preserve the same capture ID/attempt.
+Verify provider COMPLETED + persisted PAID/COMPLETED, USD amount/currency/recipient,
+audit chain and actual frontend before claiming payment success. Unknown capture
+outcomes retain the original attempt ID for reconciliation; never bypass expiry.
+
+Current regression rerun: **176 passed**, no failures/skips, six actual PostgreSQL
+checks; typecheck and lint passed. Payment/provider regression doubles are separate
+from actual Meta inference and actual Sandbox creation/GET. Capture, signed webhooks
+and frontend paid-state verification remain pending. No UI, backend authorization,
+policy, expiry, idempotency or configuration changes. No public exposure/push/deploy.
+Ignored qa/paypal-live retains current transaction, prior reconciliation proof and
+handoff3-tests.log. Exact executed application command:
+
+```sh
+PAYPAL_LIVE_VERIFY=true pnpm exec tsx --env-file=.env.local scripts/verify-live-paypal.ts create
+```
+
+## Historical earlier handoffs — superseded deadlines; do not reuse old approval links
+
+
 ## Latest: expired-order reconciliation and fresh manual-approval handoff
 
 2026-11-05 UTC, continuation from bb293fd. **NOT READY; stopped for buyer approval.**
