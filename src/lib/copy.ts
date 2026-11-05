@@ -148,6 +148,8 @@ export const COPY = {
   fixtureRisk: "Simulated AI assessment",
   advisoryRisk: "Advisory score, not a fraud probability.",
   riskUnavailable: "AI analysis unavailable. Policy still applies; an allowed request needs human review.",
+  riskReviewConcern: "Rules passed. AI raised caution, so a person decides.",
+  riskReviewUnavailable: "Rules passed. AI analysis is unavailable, so a person decides.",
   reviewerRequired: "Sign in with a reviewer passcode to decide. Policy approval alone never moves money.",
   payerClosed: "PayPal was closed. Check the payment status before trying again.",
   checkoutLoading: "Loading PayPal Sandbox checkout",
@@ -184,6 +186,11 @@ export const COPY = {
   confirmPayment: "Confirm payment",
   payerApproved: "Payer approved",
 };
+
+/** Explain risk escalation without claiming that an unavailable model found a concern. */
+export function riskReviewExplanation(risk: RiskAssessment | null | undefined): string {
+  return risk?.status === "completed" ? COPY.riskReviewConcern : COPY.riskReviewUnavailable;
+}
 
 /** Both stored resources and PayPal capture evidence must agree before a paid result. */
 export function isVerifiedPaid(p: Payment, r: PurchaseRequest): boolean {

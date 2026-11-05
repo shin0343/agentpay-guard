@@ -66,3 +66,18 @@ No design constitution amendment is required.
 
 See [FRONTEND_QA.md](FRONTEND_QA.md) for commands, observed outcomes, screenshots,
 evidence categories, remaining issues and the design constitution checklist.
+
+## Integration verification follow-up · 2026-11-04
+
+An actual backend run with OpenAI selected but no API key correctly required human
+review, while two explanation lines incorrectly said AI had raised caution. The
+request trace and focused review now select unavailable-AI copy from the returned
+risk status: “Rules passed. AI analysis is unavailable, so a person decides.”
+Completed assessments retain the concern explanation. Typography, layout, tokens,
+actions, two-key state and server decisions remain unchanged.
+
+The actual missing-key flow was checked on desktop/mobile, including reviewer
+approval followed by an explicit Not paid state. Live/mock production builds,
+existing desktop/mobile visual and integration scripts, and 12 axe scans passed.
+No real provider inference or payment was available. See
+[LIVE_INTEGRATION_REPORT.md](LIVE_INTEGRATION_REPORT.md) for evidence and blockers.

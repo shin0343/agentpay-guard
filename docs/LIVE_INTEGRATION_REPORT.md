@@ -1,0 +1,146 @@
+# Live integration verification report
+
+2026-11-04 America/Los_Angeles / 2026-11-05 UTC. Baseline: `a4311c9`.
+
+**Verdict: NOT READY.** Real Sandbox checkout/capture, signed webhook delivery and
+real AI inference remain blocked by unavailable account configuration. No real
+transaction or model success is claimed. The checks below establish environment
+readiness and local regression behavior, not external-provider acceptance.
+
+## Environment diagnosis
+
+Initial check: `2026-11-05T03:41:33Z`. The working tree was clean at `a4311c9`.
+Read the security audit, threat model, test evidence, release blockers, PayPal,
+AI and state-machine documentation and inspected runtime, configuration, adapter,
+capture/reconciliation, shared schemas and verification scripts before any build.
+
+| Requirement | Observed availability | Smallest remaining action |
+|---|---|---|
+| Sandbox client ID | Missing from process/project configuration | Set PAYPAL_CLIENT_ID privately |
+| Sandbox client secret | Missing | Set PAYPAL_CLIENT_SECRET privately |
+| Sandbox business merchant | PAYPAL_MERCHANT_ID missing; account access not supplied | Use a business account and its Sandbox REST app; configure its merchant ID |
+| Personal Sandbox payer | No authenticated payer access supplied or verified | Account owner signs in to checkout as a separate personal buyer |
+| Webhook | No WEBHOOK_ID, public HTTPS APP_URL or registered listener available | Register the same app's HTTPS listener, set PAYPAL_WEBHOOK_ID and verify genuine delivery |
+| AI provider | OPENAI_API_KEY and RISK_PROVIDER missing | Configure RISK_PROVIDER=openai and an account-authorized key/model |
+| Database | No supplied DATABASE_URL; existing local PostgreSQL accepts connections | Local isolated verification DB created/migrated successfully; configure the acceptance DB separately |
+| Running app | No AgentPay Guard listener initially; port 3000 belonged to another project | Ran this app on loopback port 3100 using the existing build first; unrelated app left untouched |
+
+Only `.env.example` existed, including at the final `04:01:55Z` recheck. No private
+configuration values were printed. The account owner was asked to configure
+gitignored `.env.local` and perform the payer login; no configuration was available
+during the recorded verification. Do not send API secrets or passwords in chat.
+
+Unauthenticated official endpoint probes at `03:44:38Z` returned HTTP 401 from
+Sandbox OAuth and OpenAI `/v1/models`. They establish TLS/HTTP reachability only;
+no credentials, payment operation or inference were sent. No attempt was made to
+extract credentials from unrelated projects, browser profiles or a keychain.
+
+## Executed verification
+
+Created a separate disposable local database, applied the existing migration and
+used generated local-only session/agent credentials in ignored files. PayPal
+configuration was explicitly nonfunctional; it was never acceptance credentials.
+First ran `RISK_PROVIDER=openai` without a key, then explicitly labelled fixture
+mode for the existing browser regression suite. No payment was initiated at PayPal.
+
+| Check | Result / evidence boundary |
+|---|---|
+| Typecheck and lint, final source | Passed |
+| Full unit/integration suite | 146 passed, zero failed/skipped, 13 files; five actual PostgreSQL checks |
+| Payment state-machine/recovery checks | Passed within that suite, including real 15-second adapter timers with controlled transport and fresh-client PostgreSQL recovery |
+| Webpack production builds | Passed for live and explicit mock modes; final build restored live mode |
+| Actual Next/PostgreSQL desktop/mobile E2E | Passed; fixture AI and explicitly intercepted payment/SDK boundaries; 37 screenshots |
+| Required mock visual A–E walkthrough | Passed, `errors: none`; 24 desktop and 23 mobile screenshots |
+| Final accessibility checks | Passed; 12 desktop/mobile axe scans, zero reported WCAG A/AA violations |
+| Missing-key application/browser checks | Policy passes → IN_REVIEW; pre-review checkout 409; missing CSRF/agent checkout 403; blocked/semantic duplicate denied; zero public payment rows |
+| Human approval separation | After actual reviewer route approval, ALLOWED with no payment; UI explicitly Not paid and payer key waiting |
+| Genuine PayPal order / capture / signed delivery | **Not executed** |
+| Genuine OpenAI inference | **Not executed**; missing-key diagnostics recorded attempts=0 |
+
+Final unit/integration run began at `2026-11-05T03:53:03.955Z`. Commands executed:
+
+```sh
+pnpm typecheck
+pnpm lint
+APG_POSTGRES_TEST=true TEST_DATABASE_URL='<isolated-local-DB>' \
+  pnpm exec vitest run --reporter=json --outputFile=qa/live-integration/regression-tests.json
+NEXT_PUBLIC_API_MODE=mock pnpm build:webpack
+NEXT_PUBLIC_API_MODE=live pnpm build:webpack
+```
+
+The connection value above is redacted; the actual run used the newly migrated
+local verification DB. Private runtime settings are deliberately omitted.
+
+`scripts/frontend-qa.cjs`, `scripts/visual-qa.cjs` in both desktop/mobile modes,
+and `scripts/frontend-accessibility.cjs` ran with scratch Playwright/axe modules,
+loopback BASE and private generated passcodes. The separate `/tmp` browser driver
+checked the actual missing-key path; its final evidence timestamp is
+`2026-11-05T03:58:40.112Z`. No test dependency was added to the project.
+
+The initial temporary browser driver confused scenario A's fixed-key replay with
+a new-key semantic duplicate. It was corrected to use `d_duplicate`; application
+policy was unchanged. A temporary CJS driver inside ignored `qa/` also caused one
+lint failure; it was moved to `/tmp`, after which final lint and tests passed.
+These harness failures are not provider or application success results.
+
+Turbopack's established worker/port restriction was not retried in this step;
+the requested acceptable Webpack build path was used. No dependencies were added.
+Local artifacts live under ignored `qa/live-integration/`: final test JSON, build
+logs, browser results/screenshots, read-only history summaries and reachability
+results. They are not guaranteed to exist in a fresh clone.
+The verification server was stopped after checks, and generated local-only
+credentials were removed. Existing PostgreSQL and the unrelated application were
+left running. No supplied project configuration was overwritten.
+
+## Targeted correction
+
+Observed a P2 explanation error: an unavailable assessment correctly required
+review, but the trace and focused review said the AI had raised a concern. Both
+now say **“Rules passed. AI analysis is unavailable, so a person decides.”** for
+noncompleted assessments. Completed assessments retain the existing concern copy.
+Strings and the shared selector live in `src/lib/copy.ts`. No layout, styling,
+decision computation, authorization or server/payment state transition changed.
+
+The final missing-key browser check asserts this explanation on request/review
+screens, checks mobile overflow, and confirms human approval still cannot imply
+Paid. Representative screenshots are linked in
+[AI verification](AI_INFERENCE_VERIFICATION.md). The entire `src/server/`,
+`migrations/`, dependency graph and automated test source remain identical to
+`a4311c9`, including the ambiguous-capture correction.
+
+## Historical-state investigation
+
+At `03:43:14Z`, before new tests, inspected the four known project-local databases
+in explicit read-only transactions. Provenance was cross-checked at `03:44Z`.
+
+| Database | Schemas inspected | Public payment rows | Test payment rows | FAILED/EXPIRED | CAPTURING/PENDING |
+|---|---:|---:|---:|---:|---:|
+| apg_frontend_qa | 3 | 0 | 4 | 0 | 0 |
+| apg_guard_smoke | 1 | 0 | 0 | 0 | 0 |
+| apg_guard_test | 11 | 0 | 20 | 0 | 0 |
+| apg_security_audit_20261104 | 6 | 0 | 8 | 0 | 0 |
+
+All 32 payment rows were in generated test schemas and matched `ORDER<n>`,
+`CAPTURE<n>`, `DIFFERENTORDER` or `PGRECOVEREDCAPTURE` from the existing tests.
+Seventeen were simulated COMPLETED records. There were zero terminal-after-unknown
+candidates or malformed completed references. Ten events labelled provider=openai
+all used the stub response ID `resp_test001`; they are not live inference evidence.
+
+**Historical P1: NOT APPLICABLE to the inspected local data.** No relevant real
+financial history was found. Git had zero remotes and no tracked deployment/CI/IaC
+or project deployment metadata was present. That does not prove no deployment
+exists elsewhere: no external deployment inventory or financial DB was supplied.
+If an earlier deployment is later identified, its history remains unassessed.
+
+For that case: obtain a read-only DB snapshot; select terminal failures/expiries
+following unknown attempts/events and malformed completed references; group by
+stored order/request/attempt ID; GET each order using its original Sandbox app;
+compare merchant, amount, currency and captures; then propose an auditable,
+case-specific repair for review. Do not clear claims, resubmit purchases or run
+capture automatically. `POST /reconcile` is **not** a read-only historical probe:
+it may resend an eligible original capture. No historical states were rewritten.
+
+Next steps and exact acceptance criteria:
+[Sandbox evidence/runbook](SANDBOX_TRANSACTION_EVIDENCE.md),
+[AI verification/runbook](AI_INFERENCE_VERIFICATION.md),
+[readiness update](RELEASE_READINESS_UPDATE.md).

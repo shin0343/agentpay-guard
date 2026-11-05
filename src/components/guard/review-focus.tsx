@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import type { PurchaseRequest } from "@/contract";
 import { API_MODE, isApiError } from "@/lib/api";
-import { COPY, policyLabel } from "@/lib/copy";
+import { COPY, policyLabel, riskReviewExplanation } from "@/lib/copy";
 import { useApi, useHotkeys, useIntentKey, useQuery } from "@/lib/hooks";
 import { Icon } from "@/components/ui/icon";
 import { Button, ButtonLink, Dialog, Kbd, Notice, TextArea, cx } from "@/components/ui/primitives";
@@ -133,7 +133,7 @@ export function ReviewFocus({ id }: { id: string }) {
             </li>
           )}
           {r.decision?.risk_escalated && (
-            <li className="border-b border-rule py-3 t-small text-ink-2">Rules passed. The AI raised caution, so this waits for you.</li>
+            <li className="border-b border-rule py-3 t-small text-ink-2">{riskReviewExplanation(risk)}</li>
           )}
           {risk && ["unavailable", "timeout"].includes(risk.status) && <li className="border-b border-rule py-3 t-body text-ink-2">{COPY.riskUnavailable}</li>}
         </ul>

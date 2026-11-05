@@ -18,7 +18,10 @@ keep the persistent mock banner. Full generated runs remain locally in `qa/`.
 | [Before: generic review](before-review-live-mobile.png) | Actual initial live messages repeated “Human review required”; compare returned evidence in final review |
 | [Security audit: review](security-review-live-mobile.png) | Re-run against the audit PostgreSQL database; fixture AI; real reviewer route |
 | [Security audit: unknown capture](security-unknown-capture-fixture-desktop.png) | Re-run intercepted payment boundary; Confirming with no capture reference or fresh-payment retry; no genuine payment |
+| [Integration: AI unavailable](integration-ai-unavailable-desktop.png) | Actual Next/PostgreSQL, OpenAI selected with no API key; eight policy passes still require review; no inference or payment |
+| [Integration: unavailable AI review, mobile](integration-ai-unavailable-review-mobile.png) | Corrected failure explanation and separate policy/payer keys; actual backend, no model request or payment |
 
 Desktop: 1440×900. Mobile: 390×844 (mock DPR 2). Additional 375/768/1280 layouts
 were verified. See [FRONTEND_QA.md](../FRONTEND_QA.md) for scope and limitations.
 The security-audit rerun is documented in [TEST_EVIDENCE.md](../TEST_EVIDENCE.md).
+The integration follow-up is documented in [LIVE_INTEGRATION_REPORT.md](../LIVE_INTEGRATION_REPORT.md).

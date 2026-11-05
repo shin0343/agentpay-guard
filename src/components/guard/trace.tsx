@@ -3,7 +3,7 @@
 import { useId } from "react";
 import type { Decision, Evaluation, RiskAssessment, RuleOutcome } from "@/contract";
 import type { Tone } from "@/lib/copy";
-import { COPY } from "@/lib/copy";
+import { COPY, riskReviewExplanation } from "@/lib/copy";
 import { Icon } from "@/components/ui/icon";
 import { Skeleton, StatusLabel, StatusLine, TONE_BG, TONE_TEXT, cx } from "@/components/ui/primitives";
 
@@ -238,7 +238,7 @@ export function DecisionTrace({ evaluation, decision, evaluating, animate = fals
 }
 
 function verdictFootnote(d: Decision, e: Evaluation | null): string {
-  if (d.risk_escalated) return "Rules passed. AI raised caution, so a person decides.";
+  if (d.risk_escalated) return riskReviewExplanation(e?.risk);
   if (d.outcome === "BLOCK" && e?.risk.level === "high") return "AI flagged this; rules blocked it. AI can raise caution, never lower it.";
   if (d.outcome === "BLOCK") return "Blocked by rule. Nothing reaches PayPal.";
   return COPY.aiBoundary;
