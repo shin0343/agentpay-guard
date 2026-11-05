@@ -16,6 +16,9 @@ keep the persistent mock banner. Full generated runs remain locally in `qa/`.
 | [Declined payment](payment-declined-mock-mobile.png) | Explicitly simulated decline and retry action |
 | [Dark / reduced motion](request-dark-fixture-desktop.png) | Intercepted representative request state; no real payment |
 | [Before: generic review](before-review-live-mobile.png) | Actual initial live messages repeated “Human review required”; compare returned evidence in final review |
+| [Security audit: review](security-review-live-mobile.png) | Re-run against the audit PostgreSQL database; fixture AI; real reviewer route |
+| [Security audit: unknown capture](security-unknown-capture-fixture-desktop.png) | Re-run intercepted payment boundary; Confirming with no capture reference or fresh-payment retry; no genuine payment |
 
 Desktop: 1440×900. Mobile: 390×844 (mock DPR 2). Additional 375/768/1280 layouts
 were verified. See [FRONTEND_QA.md](../FRONTEND_QA.md) for scope and limitations.
+The security-audit rerun is documented in [TEST_EVIDENCE.md](../TEST_EVIDENCE.md).

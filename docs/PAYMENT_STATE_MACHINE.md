@@ -252,3 +252,9 @@ purchase after interruption. Model failures never silently select fixture mode.
 `CREATING` is persisted while its request remains ALLOWED until order creation succeeds; a definitive create failure projects PAYMENT_FAILED. Creating orders cannot be cancelled or expired until their result is reconciled. A safe order GET reporting CREATED/PAYER_ACTION_REQUIRED never grants the payer key. Mapping PAYER_ACTION_REQUIRED after capture returns request CHECKOUT_PENDING and payment AWAITING_PAYER. Definitive create failure allows cancellation. Payment cancellation also accepts DECLINED/FAILED/EXPIRED (local abandonment, no invented PayPal void API).
 
 Reconciliation may recover an interrupted create using the identical create ID; it may settle a matching captured order after policy expiry (settlement records money already moved). It never initiates a new capture after approval expiry. An unknown capture stays CAPTURING until a verified outcome; expiry cannot overwrite it. PENDING may resolve to FAILED as well as DECLINED/COMPLETED. Refund statuses are never translated into a fresh successful payment.
+
+Security audit clarification (2026-11-04): HTTP 409/in-progress on capture is an
+unknown outcome. Any failed replay of an already-unknown attempt also remains
+CAPTURING; rejection of a replay does not establish failure of the original call.
+Keep its original PayPal-Request-Id and impose a 60-second retry lease before
+another resend. A later verified order/capture read may settle it normally.

@@ -689,6 +689,11 @@ export class GuardService {
     if (order.status !== "APPROVED") {
       return this.store.tx((s) => {
         const pay = s.payments[pid]!;
+        if (
+          pay.version !== owned.pay.version ||
+          !["AWAITING_PAYER", "APPROVED"].includes(pay.status)
+        )
+          return this.bundle(s, s.requests[pay.purchase_request_id]!, pay, p);
         pay.paypal.order_status = order.status;
         pay.failure = {
           code: "PAYER_ACTION_REQUIRED",
@@ -762,6 +767,7 @@ export class GuardService {
     p: Principal,
     simulate: boolean,
   ) {
+    const replayingUnknown = pay.attempts.at(-1)?.status === "unknown";
     try {
       const order = await this.paypal.capture(
         pay.paypal.order_id!,
@@ -786,12 +792,16 @@ export class GuardService {
         const attempt = current.attempts.at(-1)!;
         current.capture_claim_until = 0;
         if (
+          replayingUnknown ||
           !(e instanceof PayPalError) ||
           e.http === 0 ||
           e.http >= 500 ||
           e.http === 401 ||
+          e.http === 409 ||
           e.issue === "ORDER_ALREADY_CAPTURED"
         ) {
+          if (replayingUnknown || (e instanceof PayPalError && e.http === 409))
+            current.capture_claim_until = Date.now() + 60000;
           attempt.status = "unknown";
           attempt.issue =
             e instanceof PayPalError ? e.issue : "RESPONSE_UNVERIFIED";
@@ -996,6 +1006,7 @@ export class GuardService {
     return this.store.tx((s) => {
       let pay = s.payments[pid]!;
       const r = s.requests[pay.purchase_request_id]!;
+      if (pay.version !== owned.pay.version) return this.bundle(s, r, pay, p);
       if (
         owned.order!.status === "APPROVED" &&
         pay.status === "AWAITING_PAYER"

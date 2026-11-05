@@ -3,8 +3,9 @@ import type { StoredPayment, StoredRequest } from "../model";
 import type { Config } from "../config";
 import { redact } from "../privacy";
 import { Fault } from "../util";
+const ProviderId = z.string().regex(/^[A-Z0-9]{1,36}$/);
 export const Order = z.object({
-  id: z.string().regex(/^[A-Z0-9]{1,36}$/),
+  id: ProviderId,
   intent: z.literal("CAPTURE"),
   status: z.enum([
     "CREATED",
@@ -27,7 +28,7 @@ export const Order = z.object({
             captures: z
               .array(
                 z.object({
-                  id: z.string(),
+                  id: ProviderId,
                   status: z.enum([
                     "COMPLETED",
                     "DECLINED",
@@ -77,7 +78,7 @@ export interface PayPal {
   create(r: StoredRequest, p: StoredPayment): Promise<Order>;
   get(order: string): Promise<Order>;
   capture(order: string, key: string, simulate: boolean): Promise<Order>;
-  verify(headers: Headers, event: unknown): Promise<boolean>;
+  verify(headers: Headers, event: unknown, rawEvent?: string): Promise<boolean>;
 }
 export type PayPalRetry = {
   purchase_request_id: string;
@@ -136,6 +137,7 @@ export class SandboxPayPal implements PayPal {
     method = "GET",
     body?: unknown,
     headers: Record<string, string> = {},
+    rawBody?: string,
   ) {
     let res: Response;
     try {
@@ -149,7 +151,7 @@ export class SandboxPayPal implements PayPal {
           Prefer: "return=representation",
           ...headers,
         },
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: rawBody ?? (body === undefined ? undefined : JSON.stringify(body)),
       });
     } catch (e) {
       if (e instanceof PayPalError) throw e;
@@ -249,7 +251,7 @@ export class SandboxPayPal implements PayPal {
       ),
     );
   }
-  async verify(headers: Headers, event: unknown) {
+  async verify(headers: Headers, event: unknown, rawEvent?: string) {
     if (!this.cfg.PAYPAL_WEBHOOK_ID) return false;
     const cert = headers.get("paypal-cert-url");
     if (!cert) return false;
@@ -260,18 +262,23 @@ export class SandboxPayPal implements PayPal {
       !url.pathname.startsWith("/v1/notifications/certs/")
     )
       return false;
+    const envelope = {
+      auth_algo: headers.get("paypal-auth-algo"),
+      cert_url: cert,
+      transmission_id: headers.get("paypal-transmission-id"),
+      transmission_sig: headers.get("paypal-transmission-sig"),
+      transmission_time: headers.get("paypal-transmission-time"),
+      webhook_id: this.cfg.PAYPAL_WEBHOOK_ID,
+    };
+    // Event formatting is part of PayPal's signature input. Embed validated raw JSON,
+    // rather than encoding it as a JSON string or reserializing the parsed object.
+    const verificationBody = `${JSON.stringify(envelope).slice(0, -1)},"webhook_event":${rawEvent ?? JSON.stringify(event)}}`;
     const result = await this.call(
       "/v1/notifications/verify-webhook-signature",
       "POST",
-      {
-        auth_algo: headers.get("paypal-auth-algo"),
-        cert_url: cert,
-        transmission_id: headers.get("paypal-transmission-id"),
-        transmission_sig: headers.get("paypal-transmission-sig"),
-        transmission_time: headers.get("paypal-transmission-time"),
-        webhook_id: this.cfg.PAYPAL_WEBHOOK_ID,
-        webhook_event: event,
-      },
+      undefined,
+      {},
+      verificationBody,
     );
     return result?.verification_status === "SUCCESS";
   }
@@ -305,8 +312,11 @@ export function verifyOrder(
     captures.length > 1 ||
     captures.some(
       (c) =>
+        !ProviderId.safeParse(c.id).success ||
         c.amount.value !== r.amount.value ||
-        c.amount.currency_code !== r.amount.currency_code,
+        c.amount.currency_code !== r.amount.currency_code ||
+        order.status === "VOIDED" ||
+        (c.status === "COMPLETED" && order.status !== "COMPLETED"),
     )
   )
     throw new Fault(

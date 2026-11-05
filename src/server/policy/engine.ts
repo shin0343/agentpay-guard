@@ -13,14 +13,19 @@ export function fingerprint(
   agent: string,
   r: Pick<StoredRequest, "merchant" | "amount" | "items">,
 ) {
+  const quantities = new Map<string, number>();
+  for (const item of r.items) {
+    const name = item.name.toLowerCase();
+    quantities.set(name, (quantities.get(name) ?? 0) + item.quantity);
+  }
   return hash(
     [
       agent,
       r.merchant.name.trim().toLowerCase(),
-      r.amount.value,
+      money(cents(r.amount.value)).value,
       r.amount.currency_code,
-      r.items
-        .map((i) => `${i.name.toLowerCase()}×${i.quantity}`)
+      [...quantities]
+        .map(([name, quantity]) => `${name}×${quantity}`)
         .sort()
         .join(","),
     ].join("|"),
@@ -49,7 +54,8 @@ export function evaluate(
   );
   const duplicate = recent.find(
     (x) =>
-      x.fingerprint === r.fingerprint &&
+      (x.fingerprint === r.fingerprint ||
+        fingerprint(a.id, x) === r.fingerprint) &&
       !["BLOCKED", "REJECTED", "CANCELLED", "EXPIRED"].includes(x.status),
   );
   const used = history

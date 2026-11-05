@@ -80,7 +80,10 @@ export class GuardHttp {
       );
     }
   }
-  private async body(req: Request): Promise<unknown> {
+  private async body(
+    req: Request,
+    preserve?: (raw: string) => void,
+  ): Promise<unknown> {
     if (
       !req.headers
         .get("content-type")
@@ -104,7 +107,12 @@ export class GuardHttp {
       chunks.push(value);
     }
     try {
-      return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+      const raw = new TextDecoder("utf-8", { fatal: true }).decode(
+        Buffer.concat(chunks),
+      );
+      const parsed: unknown = JSON.parse(raw);
+      preserve?.(raw);
+      return parsed;
     } catch {
       throw new Fault("MALFORMED_JSON", 400, "Malformed JSON.");
     }
@@ -623,10 +631,13 @@ export class GuardHttp {
     throw new Fault("NOT_FOUND", 404, "Endpoint not found.");
   }
   private async webhook(req: Request) {
-    const raw = await this.body(req);
+    let rawBody = "";
+    const raw = await this.body(req, (body) => {
+      rawBody = body;
+    });
     let verified = false;
     try {
-      verified = await this.service.paypal.verify(req.headers, raw);
+      verified = await this.service.paypal.verify(req.headers, raw, rawBody);
     } catch {
       throw new Fault(
         "PAYPAL_UNAVAILABLE",

@@ -532,7 +532,14 @@ type RiskInput = {
 
 ## 5. Fingerprint (duplicate detection)
 
-`fingerprint = sha256( agent_id | lower(trim(merchant.name)) | amount.value | currency_code | sort(items.map(i => lower(i.name) + "×" + i.quantity)).join(",") )`
+`fingerprint = sha256( agent_id | lower(trim(merchant.name)) | canonical_decimal(amount_in_cents) | currency_code | sort(aggregate_by_lowercase_item_name(items).map(i => i.name + "×" + i.total_quantity)).join(",") )`
+
+Security audit amendment (2026-11-04): leading-zero amount spellings and splitting
+an identical item across rows are the same proposed purchase. Normalize money
+through integer cents and sum quantities by normalized item name before hashing.
+Evaluate historical rows with the same canonical function as well as their stored
+hash; never rewrite the append-only ledger or past fingerprints. This closes a
+P-07 representation bypass without changing the ten-minute window or payment keys.
 
 The P-07 `duplicate_guard` blocks if a request with the same fingerprint was created in the last **10 minutes** and is not in `{BLOCKED, REJECTED, CANCELLED, EXPIRED}`. It sets `duplicate_of`.
 
@@ -605,3 +612,11 @@ No response shapes or existing UI calls change. POST schemas now reject unknown 
 - `RISK_PROVIDER=fixture` is explicit and labelled `fixture`; other/unconfigured providers return unavailable and force human review. No real AI assessment is claimed. This foundation does not implement an Anthropic adapter.
 - Live demo reset clears only requests that have never had a payment. Financial records, webhooks and audit history are retained. Cached demo responses referencing removed never-paid requests are cleared so the fixed scenario retry key can be used after reset. Live seed data never fabricates past paid transactions.
 - `POST /payments/{id}/payer-cancel` is additive (operator, CSRF, idempotency, `{}`): records popup/redirect abandonment, preserving the order for later approval. The existing UI may continue without this optional signal.
+
+### Security audit protocol clarifications (2026-11-04)
+
+Webhook postback verification preserves the bounded original UTF-8 JSON event as
+the nested `webhook_event` JSON value; application processing parses a separate
+copy. Capture identifiers must be nonempty, bounded canonical provider IDs before
+recording settlement. Contradictory voided/captured provider responses remain
+unconfirmed rather than becoming a new retryable unpaid payment.
