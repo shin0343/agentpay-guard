@@ -1,6 +1,6 @@
 # PayPal Sandbox integration
 
-Latest 2026-11-05 UTC: **genuine Sandbox OAuth and a USD 18.00 order verified; payer approval/capture still pending**. See [transaction evidence](SANDBOX_TRANSACTION_EVIDENCE.md). HTTP adapter tests use a stub transport. Lifecycle tests use `FakePayPal` from `tests/backend-helpers.ts`; the production runtime always constructs `SandboxPayPal` and has no fake-provider switch.
+Latest 2026-11-05 UTC: **genuine Sandbox OAuth/order creation verified; capture and signed webhook delivery unverified**. Webhook 12968018AN5251707 is configured and its handler path corrected, but the registered host is offline. See [webhook verification](WEBHOOK_VERIFICATION.md). See [transaction evidence](SANDBOX_TRANSACTION_EVIDENCE.md). HTTP adapter tests use a stub transport. Lifecycle tests use `FakePayPal` from `tests/backend-helpers.ts`; the production runtime always constructs `SandboxPayPal` and has no fake-provider switch.
 
 ## Setup
 

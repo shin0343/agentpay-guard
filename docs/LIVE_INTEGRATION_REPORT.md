@@ -1,5 +1,54 @@
 # Live integration verification report
 
+## Latest webhook integration review — 2026-11-05 UTC, baseline cbf3642
+
+**Verdict: NOT READY.** Actual capture and genuine signed delivery remain unverified.
+Read-only PayPal Orders checks at 07:54:31Z found all three known USD 18.00 orders
+PAYER_ACTION_REQUIRED with zero captures. The local DB has no capture IDs or
+attempts and a valid 60-event chain; all internal approval deadlines elapsed.
+No expired payment was captured, extended, replaced or marked paid. An owner
+report of completion is not substituted for provider evidence; another completed
+transaction needs its order/capture ID for correlation.
+
+Actual Sandbox Webhooks Management API verified ID **12968018AN5251707** with
+these same REST credentials. One registration, subscriptions **[*]**, zero genuine
+events for today's queried period. Configured PAYPAL_WEBHOOK_ID privately in
+ignored .env.local and restarted the app. Corrected only the missing callback
+path on that existing registration: **https://agentpay-guard-example.ngrok-free.app/api/v1/webhooks/paypal**, PATCH 200 + GET 200 at
+2026-11-05T08:02:18.720Z, ID/host/subscriptions unchanged. No duplicate registration.
+
+POST reachability returned **404 / ERR_NGROK_3200**, not an application response.
+No local ngrok process, executable/config or token was found in the checked paths;
+no active tunnel hostname is established. No event ID exists to resend. No genuine
+signature success, event-to-payment mapping, HTTP acknowledgement or duplicate
+redelivery acceptance can be claimed. The owner was asked for the actual tunnel
+address and completed transaction ID; no secrets/passwords were requested.
+
+Targeted P2 correction: missing signature headers/malformed certificate URL could
+be misreported as transient verification outage (503). Five new cases failed on
+the prior code. They now reject locally with 400/no provider I/O/no state changes.
+Six ingress regression cases and seven new controlled reliability cases cover
+signed raw-byte preservation, payload distrust, duplicates/replays, out-of-order
+terminal protection, unknown transactions, review/block guards and outage retry.
+Two old timeout-test transport fixtures gained complete synthetic headers; the
+original timeout/unknown-capture protections remain intact.
+
+Final validation: **189 passed**, 16 files, no failures/skips, including six actual
+PostgreSQL checks, 20 Meta provider tests and all payment/state/webhook cases.
+Typecheck, lint, Webpack production build and existing desktop/mobile E2E passed
+(37 screenshots; fixture AI and intercepted payment/SDK boundaries). Live local
+unsigned/malformed ingress probes returned 400. No controlled test is counted as
+genuine signed Sandbox delivery or capture. No UI redesign/dependency/state-machine
+rewrite, push, public deployment or new payment.
+
+See [webhook verification](WEBHOOK_VERIFICATION.md) for exact real evidence,
+reproduction, signature/delivery gates and the remaining minimal setup;
+[Step 7 handoff](STEP7_HANDOFF.md) is prepared but **does not recommend starting
+Step 7 as integration-complete**. Ignored qa/webhook-live retains sanitized logs.
+
+## Historical earlier verification — superseded by the current review above
+
+
 ## Latest buyer-confirmation verification — 2026-11-05T07:15:52.185Z
 
 **NOT READY — PayPal has not confirmed buyer approval; no capture executed.**

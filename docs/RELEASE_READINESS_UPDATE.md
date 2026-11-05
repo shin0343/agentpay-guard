@@ -1,35 +1,45 @@
 # Release readiness update
 
-Latest authoritative verification: 2026-11-05T07:15:52.185Z. **Verdict: NOT READY.**
-The owner reported buyer approval, but genuine PayPal GET still reports
-PAYER_ACTION_REQUIRED. No successful payment is claimed and no capture was sent.
+2026-11-05 UTC, baseline cbf3642. **Final verdict: NOT READY.**
 
-| Check | Genuine result |
+| Gate | Actual evidence |
 |---|---|
-| Internal authorization | ALLOW, trusted quote, bound merchant, valid approval until 2026-11-05T07:37:52.958Z at the verification time |
-| Current Sandbox order …24282M | PAYER_ACTION_REQUIRED; USD 18.00, recipient/order/request correlation verified |
-| Other persisted orders | Both also PAYER_ACTION_REQUIRED, zero captures; internal approvals expired and locally voided; histories preserved |
-| Persisted payment | AWAITING_PAYER / request CHECKOUT_PENDING, no capture ID/status, zero attempts, one payment for this request |
-| Independent completion verifier | Exit 1: payment NOT verified completed; expected rejection of unpaid state |
-| Audit history | 60-event valid chain, unchanged head; no invented settlement events |
-| Real frontend | Desktop/mobile Waiting for payer, genuine model result, no Paid; no API interception |
-| Regression executed now | 54 targeted tests pass with controlled payment doubles; previous 176-test/real PG run retained as historical |
+| Genuine Meta | Previously verified Standard muse-spark-1.3 through policy/HTTP/PostgreSQL; integration preserved |
+| Genuine Sandbox capture | NOT verified: three actual owned order GETs PAYER_ACTION_REQUIRED, zero captures; DB no capture IDs/attempts; all approval windows elapsed |
+| Registered webhook | Same Sandbox credentials verified ID 12968018AN5251707; one registration; wildcard covers supported events |
+| Local configuration | PAYPAL_WEBHOOK_ID set privately, ignored environment mode 0600; app restarted on 127.0.0.1:3100 |
+| Callback URL | https://agentpay-guard-example.ngrok-free.app/api/v1/webhooks/paypal; handler path corrected with PATCH 200 + independent GET 200, subscriptions preserved |
+| Connectivity | Registered host HTTP 404 / ERR_NGROK_3200; no running ngrok/inspector/executable/config/token found in checked local locations |
+| Genuine signed event | No events in actual app event-history query; no signature success/delivery/resend/acknowledgement verified |
+| Persisted integrity | 60-event valid baseline chain, no fabricated settlement, old financial history retained; no new payment/expired capture |
+| Security/reliability | P2 malformed-header/outage classification fixed; raw-byte signature/tamper, replay/dedupe, terminal order, transient retry and policy guards pass controlled tests |
+| Automated checks | 189 passed, zero failed/skipped, 16 files, six actual PG checks; typecheck/lint/Webpack build pass |
+| Browser regression | Existing desktop/mobile E2E pass, 37 screenshots; fixture AI/intercepted payments, not real financial acceptance |
 
-**P1 remaining:** obtain actual PayPal buyer approval for the stored order while
-internal authorization is valid. A login/session confirmation alone does not
-establish payer approval. Recheck PayPal before capture. Capture only through the
-existing authorized backend, then independently compare capture COMPLETED, stored
-PAID/COMPLETED, capture ID, USD amount/currency, merchant, audit chain and frontend;
-repeat terminal capture and require no additional attempt/capture. All genuine
-capture/duplicate-capture acceptance remains unverified. If approval expires,
-never extend or capture it; do not automatically create another transaction.
+## Blocking remaining requirements
 
-**Webhook limitation:** genuine signed delivery remains unverified. Last real
-registration check found zero listeners and no configured subscription/public
-HTTPS callback. Authorized nonproduction HTTPS setup, same-app registration,
-configured ID and genuine event/redelivery checks remain necessary if enabled.
-No public exposure was created.
+1. **P1 integration gate:** identify the genuinely completed Sandbox order/capture
+   and independently match provider + DB + audit + frontend. Current local orders
+   do not support the owner's completed-capture premise. Do not create replacements
+   or claim payment success from that premise.
+2. **P1 integration gate:** restore the actual existing authorized ngrok tunnel.
+   A placeholder/offline hostname cannot receive genuine events. Supply the current
+   tunnel address or account/setup access privately in the local environment;
+   do not paste a token into chat. Agent can update only this existing registration
+   to the active handler, preserving subscriptions and keeping admin routes private.
+3. **P1 acceptance gate:** use an existing genuine event and supported resend if
+   available; prove signature SUCCESS, correct order/capture correlation, HTTP 2xx,
+   persisted audit and duplicate redelivery with unchanged capture/attempts. If no
+   suitable event exists, only then create a fresh authorized transaction after
+   the listener works, stopping for manual Sandbox Personal approval as needed.
 
-No product source, frontend design, policy, authorization, idempotency, expiration
-or timeout-handling changes. No push/deployment. Private environment uncommitted.
-See [test evidence](TEST_EVIDENCE.md) and [Sandbox evidence](SANDBOX_TRANSACTION_EVIDENCE.md).
+No genuine capture/webhook gate is assumed passed. Simulator events and local RSA
+or provider doubles are explicitly separate. Residual P2/operational limitations:
+ignored unknown/denied-terminal events lack a separate webhook audit entry, shared
+demo identities/stateless sessions, caller/webhook-driven reconciliation, dev-only
+dependency advisory, unverified public ingress/load/operations. Any external
+historical deployment still needs the earlier scoped inventory if it exists.
+
+No frontend/payment-flow redesign, authorization weakening, live payments,
+production deployment, push, publish or submission. See WEBHOOK_VERIFICATION.md
+and STEP7_HANDOFF.md. **Step 7 handoff prepared; do not begin it as ready yet.**

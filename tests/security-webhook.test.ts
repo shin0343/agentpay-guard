@@ -23,7 +23,11 @@ const compact = JSON.stringify(event);
  * transmissionId|timestamp|webhookId|crc32(originalRawBody).
  * This proves preservation behavior without claiming a live PayPal response.
  */
-async function receive(rawBody: string, signedBody = rawBody) {
+async function receive(
+  rawBody: string,
+  signedBody = rawBody,
+  changes: Record<string, string | null> = {},
+) {
   const { privateKey, publicKey } = generateKeyPairSync("rsa", {
     modulusLength: 2048,
   });
@@ -75,18 +79,23 @@ async function receive(rawBody: string, signedBody = rawBody) {
   );
   const http = new GuardHttp(service, cfg);
   const before = await h.store.tx((s) => s);
+  const headers = new Headers({
+    "Content-Type": "application/json",
+    "paypal-cert-url":
+      "https://api.sandbox.paypal.com/v1/notifications/certs/CERT-LOCAL",
+    "paypal-auth-algo": "SHA256withRSA",
+    "paypal-transmission-id": transmissionId,
+    "paypal-transmission-time": time,
+    "paypal-transmission-sig": signature.toString("base64"),
+  });
+  for (const [key, value] of Object.entries(changes)) {
+    if (value === null) headers.delete(key);
+    else headers.set(key, value);
+  }
   const response = await http.handle(
     new Request("http://localhost:3000/api/v1/webhooks/paypal", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "paypal-cert-url":
-          "https://api.sandbox.paypal.com/v1/notifications/certs/CERT-LOCAL",
-        "paypal-auth-algo": "SHA256withRSA",
-        "paypal-transmission-id": transmissionId,
-        "paypal-transmission-time": time,
-        "paypal-transmission-sig": signature.toString("base64"),
-      },
+      headers,
       body: rawBody,
     }),
   );
@@ -100,6 +109,26 @@ async function receive(rawBody: string, signedBody = rawBody) {
 }
 
 describe("security verification: webhook raw-body preservation", () => {
+  it.each([
+    "paypal-cert-url",
+    "paypal-auth-algo",
+    "paypal-transmission-id",
+    "paypal-transmission-time",
+    "paypal-transmission-sig",
+  ])("rejects missing %s locally without provider I/O", async (name) => {
+    const result = await receive(compact, compact, { [name]: null });
+    expect(result.response.status).toBe(400);
+    expect(result.transport).not.toHaveBeenCalled();
+    expect(result.after).toEqual(result.before);
+  });
+  it("rejects a malformed certificate URL rather than treating it as a provider outage", async () => {
+    const result = await receive(compact, compact, {
+      "paypal-cert-url": "not a URL",
+    });
+    expect(result.response.status).toBe(400);
+    expect(result.transport).not.toHaveBeenCalled();
+    expect(result.after).toEqual(result.before);
+  });
   it("a compact webhook retains its bytes and passes the local signature verifier", async () => {
     const result = await receive(compact);
     expect(result.postedEvent).toBe(compact);

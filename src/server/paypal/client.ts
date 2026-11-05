@@ -255,9 +255,26 @@ export class SandboxPayPal implements PayPal {
   }
   async verify(headers: Headers, event: unknown, rawEvent?: string) {
     if (!this.cfg.PAYPAL_WEBHOOK_ID) return false;
+    if (
+      [
+        "paypal-cert-url",
+        "paypal-auth-algo",
+        "paypal-transmission-id",
+        "paypal-transmission-time",
+        "paypal-transmission-sig",
+      ].some((name) => {
+        const value = headers.get(name);
+        return !value || !value.trim() || value.length > 8192;
+      })
+    ) return false;
     const cert = headers.get("paypal-cert-url");
     if (!cert) return false;
-    const url = new URL(cert);
+    let url: URL;
+    try {
+      url = new URL(cert);
+    } catch {
+      return false;
+    }
     if (
       url.protocol !== "https:" ||
       url.hostname !== "api.sandbox.paypal.com" ||

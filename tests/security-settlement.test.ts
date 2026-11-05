@@ -358,6 +358,10 @@ describe("independent settlement security verification", () => {
             "content-type": "application/json",
             "paypal-cert-url":
               "https://api.sandbox.paypal.com/v1/notifications/certs/STUB",
+            "paypal-auth-algo": "SHA256withRSA",
+            "paypal-transmission-id": "stub-transmission",
+            "paypal-transmission-time": "2026-11-05T00:00:00Z",
+            "paypal-transmission-sig": "stub-signature",
           },
           body: JSON.stringify({
             id: "WH-CAPTURE-ORIGINAL",

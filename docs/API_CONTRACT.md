@@ -615,6 +615,11 @@ No response shapes or existing UI calls change. POST schemas now reject unknown 
 
 ### Security audit protocol clarifications (2026-11-04)
 
+Webhook ingress clarification (2026-11-05): missing/blank/oversized signature
+headers and malformed certificate URLs are invalid input (400), rejected before
+provider I/O. They must not be misreported as temporary PayPal outages (503).
+Raw signed bytes, genuine postback verification and all payment guards stay intact.
+
 Webhook postback verification preserves the bounded original UTF-8 JSON event as
 the nested `webhook_event` JSON value; application processing parses a separate
 copy. Capture identifiers must be nonempty, bounded canonical provider IDs before
