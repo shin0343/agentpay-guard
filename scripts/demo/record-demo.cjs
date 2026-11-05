@@ -19,6 +19,11 @@ const codes = Object.fromEntries(get("DEMO_PASSCODES").split(",").map((v) => [v.
 const AGENT_KEY = get("DEMO_AGENT_KEY");
 const CARDS = "file://" + path.join(__dirname, "cards.html");
 const PAID = "preq_01M6PAT02AJK7SF54JHJ7W5CQ8";
+// Optional {segment: seconds} from narrate.py timing (lead + narration + tail). Segments hold until reached.
+const TARGETS = process.env.TARGETS_FILE ? JSON.parse(fs.readFileSync(process.env.TARGETS_FILE, "utf8")) : {};
+// Optional narrate.py timing.json: lets a scene act on the sentence that describes it.
+const TIMING = process.env.TIMING_FILE ? JSON.parse(fs.readFileSync(process.env.TIMING_FILE, "utf8")) : {};
+const LEAD = 0.5; // must match assemble-demo.py
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
 // ── Overlay: cursor, click ring, caption, highlight. Recording aid only, never product UI. ──
@@ -84,13 +89,24 @@ const OVERLAY = () => {
   async function scrollTo(loc, block = "center") { await loc.evaluate((el, block) => el.scrollIntoView({ behavior: "smooth", block }), block); await wait(900); }
   async function scrollTop() { await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" })); await wait(700); }
 
+  let startWall = 0;
   async function start(name) {
     frames = [];
+    startWall = Date.now();
     recording = true;
     await cdp.send("Page.startScreencast", { format: "jpeg", quality: 90, maxWidth: 1920, maxHeight: 1080, everyNthFrame: 1 });
     log("REC", name);
   }
+  // Wait until narration cue `i` of `seg` starts (plus `early` seconds, negative = before). No-op without timing.
+  async function atCue(seg, i, early = 0) {
+    const c = TIMING[seg]?.cues?.[i];
+    if (!c) return;
+    const ms = (LEAD + c.start + early) * 1000 - (Date.now() - startWall);
+    if (ms > 0) await wait(ms);
+  }
   async function stop(name) {
+    const hold = (TARGETS[name] ?? 0) * 1000 - (Date.now() - startWall);
+    if (hold > 0) await wait(hold);
     const stopWall = Date.now() / 1000;
     await cdp.send("Page.stopScreencast");
     recording = false;
@@ -115,6 +131,39 @@ const OVERLAY = () => {
   }
   const want = (n) => !ONLY || ONLY.includes(n);
 
+  // The request list auto-selects its newest row. Start scenario scenes on Policies with the sheet open instead.
+  async function openSheet() {
+    await page.goto(BASE + "/policies"); await wait(1200);
+    await page.getByRole("button", { name: "Send test request" }).first().click();
+    await page.getByRole("button", { name: "Send as agent" }).waitFor();
+    await page.mouse.move(1500, 330); await wait(900);
+  }
+  async function sendScenario(title) {
+    await click(page.getByText(title, { exact: true }));
+    await wait(450);
+    await click(page.getByRole("button", { name: "Send as agent" }));
+    await page.waitForURL(/\/requests\/preq_/);
+  }
+
+  // Sends a scenario through the same endpoint the sheet uses (operator session + CSRF), without waiting
+  // for the decision, then opens Requests client-side so the newest row is this request while it evaluates.
+  async function runAndOpen(key, title) {
+    await page.goto(BASE + "/policies"); await wait(1000);
+    await page.evaluate((key) => {
+      const csrf = document.cookie.split("; ").find((c) => c.startsWith("apg_csrf="))?.slice(9) ?? "";
+      window.__run = fetch(`/api/v1/demo/scenarios/${key}/run`, {
+        method: "POST", credentials: "same-origin", body: "{}",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf, "Idempotency-Key": crypto.randomUUID() },
+      }).then((r) => r.json());
+    }, key);
+    await wait(700);
+    await page.getByRole("link", { name: "Requests" }).first().click();
+    await page.waitForURL(/\/requests$/);
+    await page.getByRole("heading", { name: title }).first().waitFor({ timeout: 15000 });
+    await page.mouse.move(1500, 330);
+  }
+  const runResult = () => page.evaluate(() => window.__run);
+
   async function signIn(role) {
     await page.goto(BASE + "/login");
     await page.getByLabel("Passcode").fill(codes[role]);
@@ -127,7 +176,7 @@ const OVERLAY = () => {
     await page.goto(CARDS + "#intro");
     await page.evaluate(() => document.fonts.ready);
     await page.reload(); await page.evaluate(() => document.fonts.ready);
-    await start("01-intro"); await wait(11500); await stop("01-intro");
+    await start("01-intro"); await wait(2500); await stop("01-intro");
   }
 
   // 02 — landing + hero trace
@@ -135,14 +184,20 @@ const OVERLAY = () => {
     await page.goto(BASE + "/"); await wait(1200);
     await page.mouse.move(700, 600);
     await start("02-product");
-    await wait(1800);
+    await atCue("02-product", 1, -0.9);
     await click(page.getByRole("tab", { name: "$2,400 gift cards" }));
-    await wait(500);
+    await wait(350);
     await click(page.getByRole("button", { name: /Run decision/ }));
-    await wait(4200);
+    await atCue("02-product", 2, 0.2);
+    const boundary = page.getByText(/AI can raise caution, never lower it/).first();
+    await scrollTo(boundary);
+    await hl(boundary, 3200);
+    await atCue("02-product", 3, -0.6);
     await page.mouse.move(1380, 980, { steps: 20 });
     await scrollTo(page.locator("#ledger"), "start");
-    await wait(4200);
+    await hl(page.locator("#ledger li", { hasText: "CHECKOUT.ORDER.APPROVED" }), 2400);
+    await wait(1300);
+    await hl(page.locator("#ledger li", { hasText: "payment.completed" }), 2400);
     await stop("02-product");
   }
 
@@ -198,33 +253,39 @@ const OVERLAY = () => {
 
   // 06 — injected request is blocked (recorded before the reviewer sign-in).
   if (want("06-block")) {
-    if (!page.url().startsWith(BASE)) await signIn("operator");
-    await page.goto(BASE + "/requests"); await wait(1500);
-    await page.mouse.move(1000, 200);
+    await signIn("operator");
+    // C_ID: open a request already evaluated earlier in this session (used when live Meta inference timed out).
+    if (process.env.C_ID) { await page.goto(`${BASE}/requests/${process.env.C_ID}`); await wait(1500); await page.mouse.move(1500, 330); }
+    else await runAndOpen("c_blocked", "Digital gift card · $200");
     await start("06-block");
     if (process.env.C_ID) {
-      await click(page.locator(`a[href$="${process.env.C_ID}"]`).first());
-      await page.waitForURL(/\/requests\/preq_/);
-      await cap("Recorded 2026-11-05 · Meta inference · rules decide");
+      await cap(process.env.C_NOTE || "Scenario C · evaluated earlier in this session · rules decide");
     } else {
-      await click(page.getByRole("button", { name: "Send test request" }).first());
-      await wait(700);
-      await click(page.getByText("High risk", { exact: true }));
-      await wait(500);
-      await click(page.getByRole("button", { name: "Send as agent" }));
-      await page.waitForURL(/\/requests\/preq_/);
-      await cap("Live Meta inference · rules decide");
+      await cap("Scenario C · sent as growth-agent · live Meta inference · rules decide");
     }
     await page.getByText("Blocked.", { exact: true }).waitFor({ timeout: 30000 });
-    await wait(1600);
+    await atCue("06-block", 1, -0.5);
+    const quote = page.locator('section[aria-label="What the agent said"]');
+    await scrollTo(quote);
+    await hl(quote, 3600);
+    await atCue("06-block", 2, -0.4);
     const inj = page.getByText("Instruction pattern", { exact: false }).first();
     await scrollTo(inj);
     await hl(inj.locator("xpath=ancestor::li[1]"), 3000).catch(() => hl(inj, 3000));
-    await wait(3400);
+    await atCue("06-block", 3, -0.5);
+    const p01 = page.locator("tr", { hasText: "amount_auto_limit" }).first();
+    await scrollTo(p01);
+    await hl(page.locator("tr", { hasText: "blocked_category" }).first(), 3200);
+    await wait(500);
+    await hl(p01, 2700);
+    await atCue("06-block", 4, -0.5);
     const calls = page.getByText("PayPal calls", { exact: true });
     await scrollTo(calls);
-    await hl(calls.locator("xpath=.."), 2600);
-    await wait(3200);
+    await hl(calls.locator("xpath=.."), 2000);
+    await atCue("06-block", 5, -0.2);
+    const ledger = page.getByRole("heading", { name: "Ledger for this request" }).locator("xpath=ancestor::section[1]");
+    await scrollTo(ledger);
+    await hl(ledger, 3400);
     await cap(null);
     await stop("06-block");
     fs.writeFileSync(path.join(OUT, "06-block-request.txt"), page.url());
@@ -232,16 +293,10 @@ const OVERLAY = () => {
 
   // 08 — retry replay + ledger evidence (operator; recorded before reviewer sign-in).
   if (want("08-ledger")) {
-    if (!page.url().startsWith(BASE)) await signIn("operator");
-    await page.goto(BASE + "/requests"); await wait(1500);
-    await page.mouse.move(1000, 200);
+    await signIn("operator");
+    await openSheet();
     await start("08-ledger");
-    await click(page.getByRole("button", { name: "Send test request" }).first());
-    await wait(600);
-    await click(page.getByText("Network retry", { exact: true }));
-    await wait(400);
-    await click(page.getByRole("button", { name: "Send as agent" }));
-    await page.waitForURL(/\/requests\/preq_/);
+    await sendScenario("Network retry");
     await cap("Same Idempotency-Key → original response replayed");
     await wait(1200);
     await hl(page.getByText("Retry replayed. No new request was created.").locator("xpath=ancestor::*[2]"), 2600);
@@ -249,14 +304,14 @@ const OVERLAY = () => {
     await click(page.getByRole("link", { name: "Ledger" }).first());
     await page.waitForURL(/ledger/);
     await wait(1200);
-    await cap("Signed webhook · verified with PayPal before processing");
+    await cap("Signed webhook from the 2026-11-05 Sandbox run · verified with PayPal");
     const hook = page.getByRole("button", { name: "webhook.received" }).first();
     await click(hook);
     await wait(900);
     const detail = page.locator("tr[id^='evt-']").first();
     await scrollTo(detail);
-    await hl(detail, 3600);
-    await wait(3800);
+    await hl(detail, 4400);
+    await wait(4600);
     await scrollTop();
     await hl(page.getByText(/Chain verified/), 2600);
     await wait(3000);
@@ -267,16 +322,10 @@ const OVERLAY = () => {
   // 04 + 05 — human review boundary, then reviewer approval.
   if (want("04-review")) {
     await signIn("operator");
-    await page.goto(BASE + "/requests"); await wait(1500);
-    await page.mouse.move(1000, 200);
+    await runAndOpen("b_needs_review", "GPU hours · H-class");
     await start("04-review");
-    await click(page.getByRole("button", { name: "Send test request" }).first());
-    await wait(600);
-    await click(page.getByText("Needs a human", { exact: true }));
-    await wait(400);
-    await click(page.getByRole("button", { name: "Send as agent" }));
-    await page.waitForURL(/\/requests\/preq_/);
-    const reviewId = page.url().match(/preq_[A-Z0-9]+/)[0];
+    await cap("Scenario B · sent as research-assistant · live Meta inference");
+    const reviewId = (await runResult()).purchase_request.id;
     fs.writeFileSync(path.join(OUT, "04-review-request.txt"), reviewId);
     await page.getByText("Needs review.", { exact: true }).waitFor({ timeout: 30000 });
     await wait(1500);
@@ -335,23 +384,21 @@ const OVERLAY = () => {
     await page.goto(`${BASE}/requests/${PAID}`); await wait(1800);
     await page.mouse.move(1100, 300);
     await start("07-paid");
-    await cap("PayPal Sandbox · recorded 2026-11-05 · USD 18.00");
-    await wait(1200);
-    await hl(page.locator('section[aria-label="Approval keys"]'), 2600);
-    await wait(2800);
+    await cap("Earlier Sandbox run · captured 2026-11-05 17:07 UTC · USD 18.00");
+    await wait(4200);
+    await hl(page.locator('section[aria-label="Approval keys"]'), 3400);
+    await wait(3700);
     await click(page.getByRole("link", { name: "View payment" }));
     await page.waitForURL(/payments/);
-    await wait(1400);
-    const refs = page.getByText("References", { exact: true });
-    await scrollTo(refs, "start");
-    await hl(page.getByText("2UE55412FX0764120").locator("xpath=.."), 2600);
-    await wait(900);
-    await hl(page.getByText("32E66103YN1557633").locator("xpath=.."), 3000);
-    await wait(2600);
+    await wait(1200);
     const attempts = page.getByText("Capture attempts", { exact: true });
-    await scrollTo(attempts);
-    await hl(attempts.locator("xpath=.."), 2400);
-    await wait(2800);
+    await scrollTo(attempts, "start");
+    await hl(attempts.locator("xpath=.."), 3000);
+    await wait(3300);
+    await hl(page.getByText("2UE55412FX0764120").locator("xpath=.."), 3000);
+    await wait(900);
+    await hl(page.getByText("32E66103YN1557633").locator("xpath=.."), 3400);
+    await wait(3600);
     await cap(null);
     await stop("07-paid");
   }
@@ -361,7 +408,7 @@ const OVERLAY = () => {
     await page.goto(CARDS + "#close");
     await page.evaluate(() => document.fonts.ready);
     await page.reload(); await page.evaluate(() => document.fonts.ready);
-    await start("09-close"); await wait(7500); await stop("09-close");
+    await start("09-close"); await wait(2500); await stop("09-close");
   }
 
   await browser.close();

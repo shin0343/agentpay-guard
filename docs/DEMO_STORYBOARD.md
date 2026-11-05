@@ -1,38 +1,36 @@
 # Demo storyboard
 
-Draft 1 · 1920×1080 · 2:35 · `qa/step7-video/agentpay-guard-demo-draft.mp4` (git-ignored, see SUBMISSION_CHECKLIST.md)
+**Final:** `qa/step7-video/agentpay-guard-demo-final.mp4` · 1920×1080 · 30 fps · **2:38.9** · captions
+`agentpay-guard-demo-final.srt`. The earlier draft (`…-draft.mp4`, 2:35) is kept unchanged for comparison.
+Both files are git-ignored. QA record: [VIDEO_FINAL_QA.md](VIDEO_FINAL_QA.md).
 
-Style: developer documentary. Real application footage only, two typographic cards, no music,
-no stock footage. One small ink caption in the lower-left names what the viewer is seeing. A thin
-blue outline briefly marks the element being discussed. The cursor is a plain arrow.
+Style: developer documentary. Real application footage only, two typographic cards, no music, no stock
+footage. A small ink caption in the lower-left says what the viewer is seeing and, for historical
+evidence, when it was recorded. A thin blue outline marks the element the narration is describing.
 
-All footage is the production build connected to `apg_step7_video`, a fresh clone of the verified evidence
-database. Fresh requests were made through the real agent API and scenario runner, with genuine Meta
-`muse-spark-1.3` inference. The payment shown is the genuine Sandbox capture from 2026-11-05.
+All app footage is the production build connected to `apg_step7_final`, a fresh clone of the verified
+evidence database. New requests in scenes 3–6 and 8 were made during the recording session (2026-11-05,
+18:37–18:51 UTC) through the real agent API or the demo runner, with genuine Meta `muse-spark-1.3` inference.
+The payment in scene 7 and the webhook in scene 8 are the verified Sandbox records from 17:06–17:13 UTC the
+same day, and are captioned as such.
 
-| # | Time | Beat | Picture | Truth label on screen |
+| # | Time | Beat | Picture | On-screen label |
 |---|---|---|---|---|
-| 1 | 0:00 | **Problem.** Agents can spend; who is accountable? | Card: "AI agents can spend money now. / Who is accountable when they do?" | `[Sandbox demonstration]` |
-| 2 | 0:11 | **Product.** Rules decide, AI advises, PayPal holds key 2 | Landing hero. Pick "$2,400 gift cards", Run decision → *Blocked.* Scroll to the recorded Sandbox ledger | Hero labelled fictional; ledger "PayPal Sandbox transaction… No real money moved." |
-| 3 | 0:26 | **Low-risk request.** Agent API → 8 pass → Meta advisory score → key 1 | Policies page (the eight rules), then the workspace queue. New row appears from the agent API call, *Evaluating* → *Allowed.* Two keys outlined. Model line outlined. Continue to PayPal → official SDK button | "Eight deterministic rules · rule set v3", "Agent → POST /api/v1/purchase-requests", "Live Meta inference · advisory only", "No order is created until the payer clicks" |
-| 4 | 0:52 | **Human review boundary.** | Send scenario B → *Needs review.* P-01 and P-04 rows outlined. Review screen as operator: "Only reviewers can decide." | "Signed in as operator · cannot grant policy approval" |
-| 5 | 1:10 | **Reviewer approves.** | Reviewer signs in (masked passcode), types note, Approve purchase → *Allowed.* → request: key 1 "by M. Okafor", key 2 waiting | "Separate reviewer sign-in", "Policy approval · granted by M. Okafor" |
-| 6 | 1:27 | **Prompt injection blocked.** | Send scenario C → *Blocked.* Injection signal outlined with the quoted text. `PayPal calls 0` outlined | "Live Meta inference · rules decide" |
-| 7 | 1:48 | **Verified Sandbox payment.** | Recorded Paid request → both keys granted → payment page: order and capture IDs outlined, one capture attempt | "PayPal Sandbox · recorded 2026-11-05 · USD 18.00" |
-| 8 | 2:07 | **Retries, webhooks, ledger.** | Scenario D retry → "Retry replayed" notice and duplicate block. Ledger → expand `webhook.received` (event ID, `PAYMENT.CAPTURE.COMPLETED`, `verified_order_and_capture`) → "Chain verified" | "Same Idempotency-Key → original response replayed", "Signed webhook · verified with PayPal before processing" |
-| 9 | 2:28 | **Close.** | Card: "Give AI agents spending power. Keep humans in control." + three rows (policy, two keys, proof) | `[Sandbox] No real money moved · not a production deployment` |
-
-## Why this order
-
-Judges score presentation on "end-to-end, who it's for, why it matters". The story moves from the safe
-path (A) to human judgment (B) to an attack (C), then proves the money part with the real capture and
-ends on the evidence trail. Each beat answers one question from the landing page.
+| 1 | 0:00 | **Hook.** Agents can spend; who sets limits, approves, proves? | Card: "AI agents can spend money now. / Who is accountable when they do?" | `[Sandbox demonstration]` |
+| 2 | 0:10 | **Product.** Rules decide, AI advises, PayPal holds key 2 | Landing hero: $2,400 gift cards → Run decision → *Blocked.*; "AI can raise caution, never lower it" outlined; recorded Sandbox ledger with the approval webhook and capture rows outlined | Hero: "Runs locally on fictional data"; ledger: "PayPal Sandbox transaction… No real money moved." |
+| 3 | 0:25 | **Low-risk request.** | Policies (eight rules) → agent API call → new row → *Evaluating* → *Allowed.*; keys outlined; model line outlined → official PayPal Sandbox button | "Eight deterministic rules", "Agent → POST /api/v1/purchase-requests", "Live Meta inference · advisory only", "No order is created until the payer clicks" |
+| 4 | 0:52 | **Human review boundary.** | Opens on the new $640 request while it is *Evaluating* → *Needs review.*; P-01 and P-04 outlined → review screen as operator: "Only reviewers can decide." | "Scenario B · sent as research-assistant · live Meta inference", "Signed in as operator · cannot grant policy approval" |
+| 5 | 1:09 | **Reviewer approves.** | Reviewer sign-in (masked) → note → Approve purchase → request: key 1 "by M. Okafor", key 2 waiting | "Separate reviewer sign-in", "Policy approval · granted by M. Okafor" |
+| 6 | 1:26 | **Prompt injection blocked.** | Opens on the C request → agent's quote → injection signal → P-03 and P-01 rows → `PayPal calls 0` → request ledger, each on its sentence | "Scenario C · evaluated at 18:37 UTC in this session · Meta score 95 · rules decide" |
+| 7 | 1:47 | **Verified Sandbox payment (historical).** | Paid request → keys → payment page: one capture attempt, order and capture IDs | "Earlier Sandbox run · captured 2026-11-05 17:07 UTC · USD 18.00" |
+| 8 | 2:09 | **Retries, webhooks, ledger.** | Policies with scenario sheet → Network retry → "Retry replayed" + duplicate block → Ledger → expanded `webhook.received` → "Chain verified" | "Same Idempotency-Key → original response replayed", "Signed webhook from the 2026-11-05 Sandbox run · verified with PayPal" |
+| 9 | 2:32 | **Close.** | Card: "Give AI agents spending power. Keep humans in control." + three rows | `[Sandbox] No real money moved · not a production deployment` |
 
 ## Honesty rules applied
 
-- The live low-risk request stops at the PayPal button. The video does not imply that request was paid.
-  The paid request is introduced as "this eighteen-dollar purchase completed in PayPal Sandbox" with the
-  recorded date on screen.
-- Scenario E (decline and recovery) is not shown, because it uses PayPal negative testing and was not
-  verified as a natural decline.
-- No KPI claims, no accuracy numbers, no production wording.
+- Narration says outright that none of the newly recorded requests was paid, and that the paid one is from
+  an earlier Sandbox run on November 5. Captions repeat the date and UTC time.
+- Scene 6 shows a request evaluated 12 minutes before it was filmed, because three later live attempts hit
+  Meta's 8-second deadline (they were still blocked by rules). The caption gives the evaluation time.
+- Scenario E (decline and recovery) is not shown: it uses PayPal negative testing, not a natural decline.
+- No KPI claims, accuracy numbers or production wording.
