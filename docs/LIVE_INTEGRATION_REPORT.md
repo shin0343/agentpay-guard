@@ -1,5 +1,30 @@
 # Live integration verification report
 
+## Latest test-card-ready buyer handoff — 2026-11-05T17:06:25.464Z
+
+Owner reports the separate Sandbox buyer now has a test card. Previous order
+…681133 was independently PAYER_ACTION_REQUIRED/zero captures at 2026-11-05T17:06:10.505Z;
+DB payment attempts/capture IDs absent. Normal expiry retained its original time
+and audit prefix (EXPIRED/local VOIDED); no old approval extended or captured.
+The existing public webhook callback was rechecked (app 400 unsigned), same-app
+registration verified and actual event history empty.
+
+One fresh real USD 18.00 order …764120, request …7W5CQ8,
+payment …WZBPZA: actual muse-spark-1.3 score 5, 2803 ms,
+eight policy checks passed. Provider GET verifies recipient/IDs/amount/currency.
+Create/checkout replays same resources, separate duplicate blocked, one payment,
+99-event chain valid. Current PAYER_ACTION_REQUIRED / AWAITING_PAYER,
+zero capture attempts. Deadline **2026-11-05T17:36:24.208Z** (Nov 5, 09:36:24.208 PST),
+unchanged 30-minute policy. Paused for owner to open the fresh approval URL in
+the tested buyer session and click Pay Now using the Sandbox test funding source.
+After confirmation: revalidate, protected capture, independent provider/DB/audit/
+frontend and terminal repeat, then genuine signed event/resend verification.
+NOT READY pending those actual results. Prior 193-test run remains historical;
+no source change or new regression run in this handoff. No push/deployment.
+
+## Earlier handoffs — superseded approval deadlines
+
+
 ## Current buyer-ready handoff — 2026-11-05T16:29:53.071Z
 
 Owner confirmed standalone Sandbox login now works. No credentials were requested.
