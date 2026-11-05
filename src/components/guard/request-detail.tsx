@@ -55,7 +55,7 @@ export function RequestDetail({ id, replayed, showBack = true }: { id: string; r
       <VerdictMark key={r.status} tone={v.tone} word={v.word} reason={v.reason} tag={v.tag} animate={r.status !== firstStatus} />
 
       <div className="space-y-4">
-        <div className="border-y border-rule"><TwoKey keys={r.keys} /></div>
+        <div className="border-y border-rule"><TwoKey keys={r.keys} status={r.status} /></div>
         <div className="decision-actions"><RequestActions r={r} /></div>
         {r.status === "ALLOWED" && <p className="t-small text-ink-2">{COPY.notPaidYet}</p>}
       </div>

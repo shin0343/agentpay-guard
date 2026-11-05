@@ -1,4 +1,22 @@
-# Frontend evidence · 2026-11-04
+# Screenshots
+
+## Step 7 final set · 2026-11-05
+
+Production build, real Next.js API and PostgreSQL (`apg_step7_demo`, a clone of the evidence database).
+Desktop 1440×900 and mobile 390×844, both at 2×. No API interception.
+
+| Image | Evidence |
+|---|---|
+| [Landing](step7-desktop-landing.png) | Hero trace runs locally on fictional data (labelled). Ledger excerpt below the fold is the recorded Sandbox run |
+| [Paid](step7-desktop-paid.png) · [mobile](step7-mobile-paid.png) | **Genuine Sandbox payment** `preq_…5CQ8`: Meta score 5, eight rules pass, both keys granted |
+| [Payment](step7-desktop-payment.png) | **Genuine** PayPal order `2UE55412FX0764120` and capture `32E66103YN1557633`, one attempt |
+| [Allowed](step7-desktop-allowed.png) | Request created through the real agent API during recording; genuine Meta inference (score 12); payer key waiting |
+| [Checkout](step7-desktop-checkout.png) | Official PayPal JS SDK button, Sandbox client ID; no order exists until the payer clicks |
+| [Human approved](step7-desktop-human-approved.png) · [mobile](step7-mobile-human-approved.png) | Scenario B with genuine Meta inference, approved by the reviewer; key 1 "by M. Okafor", key 2 waiting |
+| [Blocked](step7-desktop-blocked.png) · [mobile](step7-mobile-blocked.png) | Scenario C with genuine Meta inference flagging the injection; rules block; `PayPal calls 0` |
+| [Ledger](step7-desktop-ledger.png) · [mobile](step7-mobile-ledger.png) | Persisted audit events, chain verified |
+
+## Earlier evidence · 2026-11-04
 
 These images have different evidence categories. **None proves a genuine PayPal
 Sandbox payment or OpenAI inference.** Real-backend views use PostgreSQL and

@@ -1,7 +1,7 @@
 "use client";
 
-import type { KeyState, PurchaseRequest } from "@/contract";
-import type { Tone } from "@/lib/copy";
+import type { KeyState, PurchaseRequest, RequestStatus } from "@/contract";
+import { payerKeyNote, policyKeyNote, type Tone } from "@/lib/copy";
 import { clock } from "@/lib/format";
 import { Icon } from "@/components/ui/icon";
 import { StatusLabel, TONE_BORDER, TONE_TEXT, TONE_TINT, cx } from "@/components/ui/primitives";
@@ -32,8 +32,10 @@ const KEY_TONE: Record<KeyState["state"], { tone: Tone; word: string }> = {
   not_applicable: { tone: "neutral", word: "Not applicable" },
 };
 
-function KeyColumn({ n, title, k, source }: { n: 1 | 2; title: string; k: KeyState; source: string }) {
+function KeyColumn({ n, title, k, source, note }: { n: 1 | 2; title: string; k: KeyState; source: string; note?: { word: string; detail: string } | null }) {
   const meta = KEY_TONE[k.state];
+  const word = note?.word ?? meta.word;
+  const detail = note?.detail ?? k.detail;
   return (
     <div className="flex min-w-0 gap-3 py-4 sm:px-5 first:sm:pl-0">
       <span
@@ -47,8 +49,8 @@ function KeyColumn({ n, title, k, source }: { n: 1 | 2; title: string; k: KeySta
         <p className="t-label text-muted">Key {n} · {source}</p>
         <p className="t-title mt-0.5">{title}</p>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <StatusLabel tone={meta.tone}>{meta.word}</StatusLabel>
-          {k.detail && <span className="t-small text-ink-2">· {k.detail}</span>}
+          <StatusLabel tone={meta.tone}>{word}</StatusLabel>
+          {detail && <span className="t-small text-ink-2">· {detail}</span>}
         </div>
         {k.at && <p className="mt-0.5 t-data text-muted">{clock(k.at)}</p>}
       </div>
@@ -57,11 +59,11 @@ function KeyColumn({ n, title, k, source }: { n: 1 | 2; title: string; k: KeySta
 }
 
 /** Signature: Policy approval and Payer approval are always shown together and never merged. */
-export function TwoKey({ keys, className }: { keys: PurchaseRequest["keys"]; className?: string }) {
+export function TwoKey({ keys, status, className }: { keys: PurchaseRequest["keys"]; status?: RequestStatus; className?: string }) {
   return (
     <section aria-label="Approval keys" className={cx("grid grid-cols-1 divide-y divide-rule sm:grid-cols-2 sm:divide-x sm:divide-y-0", className)}>
-      <KeyColumn n={1} title="Policy approval" k={keys.policy} source="Guard" />
-      <KeyColumn n={2} title="Payer approval" k={keys.payer} source="PayPal" />
+      <KeyColumn n={1} title="Policy approval" k={keys.policy} source="Guard" note={policyKeyNote(keys.policy, status)} />
+      <KeyColumn n={2} title="Payer approval" k={keys.payer} source="PayPal" note={payerKeyNote(keys.payer.state, status)} />
     </section>
   );
 }

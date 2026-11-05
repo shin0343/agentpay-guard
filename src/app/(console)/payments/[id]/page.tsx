@@ -116,7 +116,7 @@ export default function PaymentPage() {
       {mock && p.status === "COMPLETED" && <Notice tone="review" title="Simulated result.">{COPY.mockCapture}</Notice>}
 
       <div className="space-y-4">
-        <div className="border-y border-rule"><TwoKey keys={r.keys} /></div>
+        <div className="border-y border-rule"><TwoKey keys={r.keys} status={r.status} /></div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
           {r.next_actions.includes("retry_payment") && (
             <ButtonLink variant="primary" href={`/requests/${r.id}/checkout`} iconRight="arrowRight">Try payment again</ButtonLink>

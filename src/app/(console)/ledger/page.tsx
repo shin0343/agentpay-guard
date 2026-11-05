@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Fragment, Suspense, useDeferredValue, useEffect, useRef, useState } from "react";
 import { AuditEventType, RequestStatus, type AuditEvent } from "@/contract";
 import { API_MODE } from "@/lib/api";
-import { COPY, EVENT_LABEL, STATUS, auditSummary } from "@/lib/copy";
+import { COPY, EVENT_LABEL, STATUS, auditSummary, ledgerState } from "@/lib/copy";
 import { clock, dayKey, formatMoney, shortDate } from "@/lib/format";
 import { useApi, useHotkeys, useLoadMore, useNow, useQuery } from "@/lib/hooks";
 import { Icon } from "@/components/ui/icon";
@@ -122,26 +122,26 @@ function Ledger() {
           <EmptyState title="No matching events." line="Search by request ID, merchant, agent or PayPal ID." />
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full min-w-0 table-fixed border-collapse md:table-auto">
+          <table className="w-full min-w-0 table-fixed border-collapse">
             <caption className="sr-only">Audit events, newest first</caption>
             <thead>
               <tr className="border-b border-rule-strong text-left">
                 <th scope="col" className="w-[72px] py-2 pr-3 font-normal md:w-[84px]"><span className="t-label text-muted">Time</span></th>
                 <th scope="col" className="py-2 pr-3 font-normal"><span className="t-label text-muted">Event</span></th>
-                <th scope="col" className="hidden py-2 pr-3 font-normal md:table-cell"><span className="t-label text-muted">Request</span></th>
-                <th scope="col" className="hidden py-2 pr-3 font-normal lg:table-cell"><span className="t-label text-muted">Actor</span></th>
-                <th scope="col" className="hidden py-2 pr-3 text-right font-normal sm:table-cell"><span className="t-label text-muted">Amount</span></th>
-                <th scope="col" className="w-[118px] py-2 text-right font-normal md:w-auto"><span className="t-label text-muted">State</span></th>
+                <th scope="col" className="hidden w-[148px] py-2 pr-3 font-normal md:table-cell"><span className="t-label text-muted">Request</span></th>
+                <th scope="col" className="hidden w-[188px] py-2 pr-3 font-normal lg:table-cell"><span className="t-label text-muted">Actor</span></th>
+                <th scope="col" className="hidden w-[104px] py-2 pr-3 text-right font-normal sm:table-cell"><span className="t-label text-muted">Amount</span></th>
+                <th scope="col" className="w-[136px] py-2 text-right font-normal md:w-[164px]"><span className="t-label text-muted">State</span></th>
               </tr>
             </thead>
             <tbody>
               {rows.map((e) => {
                 const expanded = open === e.id;
-                const s = e.state_after ? STATUS[e.state_after] : null;
+                const s = ledgerState(e.type, e.state_after);
                 return (
                   <Fragment key={e.id}>
                     <tr className={cx("border-b border-rule align-top transition-colors duration-(--t-fast) hover:bg-sunken/50", expanded && "bg-sunken/70")}>
-                      <td className="py-3 pr-3">
+                      <td className="pb-3 pr-3 pt-[22px]">
                         <time className="block t-data text-ink-2" dateTime={e.occurred_at} title={e.occurred_at}>{clock(e.occurred_at)}</time>
                         {dayKey(e.occurred_at) !== today && <span className="t-data text-muted">{shortDate(e.occurred_at)}</span>}
                       </td>
@@ -158,9 +158,9 @@ function Ledger() {
                           <span className="t-small font-medium text-ink md:hidden">{EVENT_LABEL[e.type]}</span>
                         </button>
                         {auditSummary(e) && <p className="mt-0.5 line-clamp-2 t-small text-ink-2 md:line-clamp-none">{auditSummary(e)}</p>}
-                        {e.purchase_request_id && <Link href={`/requests/${e.purchase_request_id}`} className="inline-flex min-h-10 items-center t-data text-muted underline underline-offset-4 md:hidden">{e.purchase_request_id.slice(0, 5)}…{e.purchase_request_id.slice(-4)}</Link>}
+                        {e.purchase_request_id && <Link href={`/requests/${e.purchase_request_id}`} className="flex min-h-10 w-fit items-center t-data text-muted underline underline-offset-4 md:hidden">{e.purchase_request_id.slice(0, 5)}…{e.purchase_request_id.slice(-4)}</Link>}
                       </td>
-                      <td className="hidden py-3 pr-3 md:table-cell">
+                      <td className="hidden pb-3 pr-3 pt-[19px] md:table-cell">
                         {e.purchase_request_id ? (
                           <span className="inline-flex items-center gap-2">
                             <IdTag id={e.purchase_request_id} label="request ID" />
@@ -170,15 +170,15 @@ function Ledger() {
                           </span>
                         ) : <span className="t-data text-muted">—</span>}
                       </td>
-                      <td className="hidden py-3 pr-3 lg:table-cell">
+                      <td className="hidden pb-3 pr-3 pt-[21px] lg:table-cell">
                         <span className="t-small text-ink-2">{e.actor.name}</span>
                         <span className="block t-label text-muted">{e.actor.kind}</span>
                       </td>
-                      <td className="hidden py-3 pr-3 text-right sm:table-cell">
+                      <td className="hidden pb-3 pr-3 pt-[21px] text-right sm:table-cell">
                         <span className="t-amount text-ink">{e.amount ? formatMoney(e.amount) : ""}</span>
                       </td>
-                      <td className="py-3 text-right">
-                        {s && <StatusLabel tone={s.tone} wrap>{s.label}</StatusLabel>}
+                      <td className="pb-3 pt-[21px] text-right">
+                        {s && <StatusLabel tone={s.tone} className="justify-end">{s.label}</StatusLabel>}
                       </td>
                     </tr>
                     {expanded && (

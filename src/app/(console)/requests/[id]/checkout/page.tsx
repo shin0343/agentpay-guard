@@ -44,7 +44,7 @@ export default function CheckoutPage() {
       </header>
 
       {!!q.error && <StaleNotice retry={q.refetch} />}
-      <div className="border-y border-rule"><TwoKey keys={r.keys} /></div>
+      <div className="border-y border-rule"><TwoKey keys={r.keys} status={r.status} /></div>
 
       {payable ? (
         <>

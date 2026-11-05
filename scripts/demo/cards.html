@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..600&family=Geist:wght@400;500&family=Geist+Mono:wght@400;500&display=block" rel="stylesheet">
+<style>
+  /* Mirrors the light tokens in src/app/globals.css; video card only, not product UI. */
+  :root { --paper:#F4F2EC; --ink:#16150F; --ink-2:#45423A; --muted:#6B675D; --rule:#DDD9CE; --allow:#1D6B45; --review:#8F5600; --block:#B42A18; }
+  html, body { margin:0; height:100%; background:var(--paper); color:var(--ink); }
+  body { font-family:"Geist", system-ui, sans-serif; }
+  .card { position:absolute; inset:0; display:none; padding:0 160px; flex-direction:column; justify-content:center; }
+  .card.on { display:flex; }
+  .label { font-family:"Geist Mono", monospace; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .env { color:var(--review); }
+  h1 { font-family:"Newsreader", serif; font-weight:450; font-size:88px; line-height:1.02; letter-spacing:-.025em; margin:28px 0 0; max-width:15ch; }
+  h2 { font-family:"Newsreader", serif; font-weight:450; font-size:44px; line-height:1.1; letter-spacing:-.02em; margin:28px 0 0; color:var(--ink-2); }
+  .rows { margin-top:56px; border-top:1px solid var(--rule); max-width:1100px; }
+  .row { display:grid; grid-template-columns:56px 260px 1fr; gap:24px; align-items:baseline; padding:16px 0; border-bottom:1px solid var(--rule); font-size:20px; }
+  .row .n { font-family:"Geist Mono", monospace; font-size:15px; color:var(--muted); }
+  .row .k { font-weight:500; }
+  .row .v { color:var(--ink-2); }
+  .foot { position:absolute; left:160px; right:160px; bottom:64px; display:flex; justify-content:space-between; }
+  .reveal > * { opacity:0; transform:translateY(6px); animation:in 520ms cubic-bezier(.2,.8,.2,1) forwards; }
+  .reveal > *:nth-child(2) { animation-delay:220ms; } .reveal > *:nth-child(3) { animation-delay:900ms; } .reveal > *:nth-child(4) { animation-delay:1500ms; }
+  @keyframes in { to { opacity:1; transform:none; } }
+</style>
+</head>
+<body>
+  <section class="card" id="intro">
+    <div class="reveal">
+      <p class="label">PayPal AI Hackathon 2026 · <span class="env">[Sandbox demonstration]</span></p>
+      <h1>AI agents can spend money now.</h1>
+      <h2>Who is accountable when they do?</h2>
+    </div>
+    <div class="foot"><span class="label">AgentPay Guard</span><span class="label">Real product · real Sandbox records</span></div>
+  </section>
+
+  <section class="card" id="close">
+    <div class="reveal">
+      <p class="label">AgentPay Guard</p>
+      <h1>Give AI agents spending power. Keep humans in control.</h1>
+      <div class="rows">
+        <div class="row"><span class="n">01</span><span class="k">Policy decides</span><span class="v">Eight deterministic rules. AI can add caution, never remove it.</span></div>
+        <div class="row"><span class="n">02</span><span class="k">Two keys</span><span class="v">Policy approval in Guard. Payer approval in PayPal.</span></div>
+        <div class="row"><span class="n">03</span><span class="k">Proof</span><span class="v">Signed webhooks, one capture, a hash-chained ledger.</span></div>
+      </div>
+    </div>
+    <div class="foot"><span class="label env">[Sandbox] No real money moved · not a production deployment</span><span class="label">Meta Muse Spark · PayPal Orders v2</span></div>
+  </section>
+<script>
+  const id = location.hash.slice(1) || "intro";
+  document.getElementById(id).classList.add("on");
+</script>
+</body>
+</html>

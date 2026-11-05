@@ -3,7 +3,7 @@
  * Canonical terms: Purchase request · Allowed / Needs review / Blocked · Policy approval ·
  * Payer approval · Paid / Not paid · Risk signal · Ledger. Never "successfully".
  */
-import type { AuditEventType, Payment, PolicyResult, PurchaseRequest, RequestStatus } from "@/contract";
+import type { AuditEventType, KeyState, Payment, PolicyResult, PurchaseRequest, RequestStatus } from "@/contract";
 import { Decision, RiskAssessment, Review, type AuditEvent } from "@/contract";
 
 export type Tone = "allow" | "review" | "block" | "neutral";
@@ -75,14 +75,25 @@ export const RULE_LABEL: Record<string, string> = {
 
 export const policyLabel = (rule: PolicyResult) => RULE_LABEL[rule.rule_key] ?? rule.rule_key;
 
+// Backend reasons that name no rule. The returned rule outcomes explain these better.
+const GENERIC_REASONS = [
+  "Human review required before payment.",
+  "Hard policy limit violated.",
+  "Blocked by deterministic spending policy.",
+];
+
 // Explain returned outcomes; never calculate a policy decision in the frontend.
 function decisionReason(request: PurchaseRequest, outcome: "review" | "block"): string {
   const original = request.decision?.reason;
-  if (original && !["Human review required before payment.", "Hard policy limit violated."].includes(original)) return original;
+  if (original && !GENERIC_REASONS.includes(original)) return original;
   const flagged = request.evaluation?.policy.filter((rule) => rule.outcome === outcome) ?? [];
   if (outcome === "block") {
-    if (flagged.some((rule) => ["blocked_category", "merchant_category"].includes(rule.rule_key))) return COPY.categoryBlocked;
-    if (flagged.some((rule) => rule.rule_key === "amount_auto_limit")) return COPY.amountBlocked;
+    const category = flagged.some((rule) => ["blocked_category", "merchant_category"].includes(rule.rule_key));
+    const amount = flagged.some((rule) => rule.rule_key === "amount_auto_limit");
+    if (category && amount) return COPY.categoryAndAmountBlocked;
+    if (category) return COPY.categoryBlocked;
+    if (amount) return COPY.amountBlocked;
+    if (flagged.some((rule) => rule.rule_key === "duplicate_guard")) return COPY.duplicateBlocked;
   } else {
     if (flagged.some((rule) => rule.rule_key === "amount_auto_limit")) return COPY.amountReview;
     if (flagged.some((rule) => rule.rule_key === "merchant_allowlist")) return COPY.merchantReview;
@@ -162,7 +173,7 @@ export const COPY = {
   demoScenario: "Demonstration request. Backend policies and configured AI provider evaluate it.",
   demoResetLive: "Reset removes unpaid requests without payment records. Payment records and the ledger are preserved.",
   demoResetMock: "Reset restores the fictional demonstration data in this browser.",
-  ledgerSample: "Illustrative ledger · fictional data, not verified payment evidence",
+  ledgerEvidence: "PayPal Sandbox transaction, USD 18.00. Signed webhooks verified by PayPal. No real money moved.",
   returnUnconfirmed: "Payment not yet confirmed.",
   missingPayment: "Missing payment reference.",
   returnRecovery: "Open the stored payment to check its verified status.",
@@ -182,10 +193,46 @@ export const COPY = {
   merchantReview: "This merchant requires human review before payment.",
   categoryBlocked: "This item category is blocked. Nothing reached PayPal.",
   amountBlocked: "Amount exceeds the policy cap. Nothing reached PayPal.",
+  categoryAndAmountBlocked: "Blocked item category and over the policy cap. Nothing reached PayPal.",
+  duplicateBlocked: "Duplicate of a recent purchase request. Nothing reached PayPal.",
   policyLimit: "Policy",
   confirmPayment: "Confirm payment",
   payerApproved: "Payer approved",
 };
+
+/**
+ * The backend reports the payer key as "not applicable" until checkout exists.
+ * Say why, from the request state, without changing the key itself.
+ */
+export function payerKeyNote(state: KeyState["state"], status?: RequestStatus): { word: string; detail: string } | null {
+  if (state !== "not_applicable" || !status) return null;
+  if (status === "BLOCKED") return { word: "Not applicable", detail: "No payment can start" };
+  if (status === "REJECTED") return { word: "Not applicable", detail: "Rejected before checkout" };
+  if (status === "RECEIVED" || status === "EVALUATING" || status === "IN_REVIEW") return { word: "Not yet", detail: "Opens after policy approval" };
+  return null;
+}
+
+/** A reviewer-granted policy key names the person; an automatic grant names the rule set. */
+export function policyKeyNote(k: KeyState, status?: RequestStatus): { word: string; detail: string } | null {
+  if (k.state === "waiting" && (status === "RECEIVED" || status === "EVALUATING")) return { word: "Waiting", detail: "Evaluating" };
+  if (k.state !== "granted" || !k.by || k.by === "policy" || k.detail?.includes(k.by)) return null;
+  return { word: "Granted", detail: `by ${k.by}` };
+}
+
+/** Ledger state for an event. Payer approval is recorded while the request still awaits capture. */
+export function ledgerState(type: AuditEventType, state: RequestStatus | null | undefined): { label: string; tone: Tone } | null {
+  if (!state) return null;
+  if (type === "payer.approved" && state === "CHECKOUT_PENDING") return { label: COPY.payerApproved, tone: "review" };
+  return STATUS[state];
+}
+
+/** Group thousands in dollar amounts inside backend evidence strings ("$2400.00" → "$2,400.00"). */
+export function groupDollars(text: string): string;
+export function groupDollars(text: string | null | undefined): string | null | undefined;
+export function groupDollars(text: string | null | undefined) {
+  if (text == null) return text;
+  return text.replace(/\$(\d{4,})(\.\d{2})?\b/g, (_, whole: string, cents = "") => `$${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${cents}`);
+}
 
 /** Explain risk escalation without claiming that an unavailable model found a concern. */
 export function riskReviewExplanation(risk: RiskAssessment | null | undefined): string {

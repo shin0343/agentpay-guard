@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import type { PurchaseRequest } from "@/contract";
 import { API_MODE, isApiError } from "@/lib/api";
-import { COPY, policyLabel, riskReviewExplanation } from "@/lib/copy";
+import { COPY, groupDollars, policyLabel, riskReviewExplanation } from "@/lib/copy";
 import { useApi, useHotkeys, useIntentKey, useQuery } from "@/lib/hooks";
 import { Icon } from "@/components/ui/icon";
 import { Button, ButtonLink, Dialog, Kbd, Notice, TextArea, cx } from "@/components/ui/primitives";
@@ -117,8 +117,8 @@ export function ReviewFocus({ id }: { id: string }) {
               <Icon name="alert" className={cx("shrink-0 translate-y-0.5", p.outcome === "block" ? "text-block" : "text-review")} />
               <span className="t-data w-10 shrink-0 text-muted">{p.rule_id}</span>
               <span className="min-w-0">
-                <span className="block t-body font-medium text-ink">{policyLabel(p)} · {p.observed}</span>
-                <span className="mt-1 block t-small text-ink-2">{p.limit ? `${COPY.policyLimit}: ${p.limit}` : p.message}</span>
+                <span className="block t-body font-medium text-ink">{policyLabel(p)} · {groupDollars(p.observed)}</span>
+                <span className="mt-1 block t-small text-ink-2">{p.limit ? `${COPY.policyLimit}: ${groupDollars(p.limit)}` : p.message}</span>
               </span>
             </li>
           ))}
@@ -144,7 +144,7 @@ export function ReviewFocus({ id }: { id: string }) {
       {/* AFTER YOU APPROVE */}
       <section aria-labelledby="after">
         <h2 id="after" className="t-label text-ink">{COPY.approvalKeys}</h2>
-        <div className="mt-2 border-y border-rule"><TwoKey keys={r.keys} /></div>
+        <div className="mt-2 border-y border-rule"><TwoKey keys={r.keys} status={r.status} /></div>
       </section>
 
       <details className="group">

@@ -3,7 +3,7 @@
 import { useId } from "react";
 import type { Decision, Evaluation, RiskAssessment, RuleOutcome } from "@/contract";
 import type { Tone } from "@/lib/copy";
-import { COPY, riskReviewExplanation } from "@/lib/copy";
+import { COPY, groupDollars, riskReviewExplanation } from "@/lib/copy";
 import { Icon } from "@/components/ui/icon";
 import { Skeleton, StatusLabel, StatusLine, TONE_BG, TONE_TEXT, cx } from "@/components/ui/primitives";
 
@@ -179,14 +179,14 @@ export function DecisionTrace({ evaluation, decision, evaluating, animate = fals
                 </th>
                 <td className={cx("pr-3", pad)}>
                   <span className="t-data text-ink">{p.rule_key}</span>
-                  {!compact && <span className="mt-1 block t-small text-ink-2 md:hidden">{p.observed}{p.limit ? ` · ${p.limit}` : ` · ${p.message}`}</span>}
+                  {!compact && <span className="mt-1 block t-small text-ink-2 md:hidden">{groupDollars(p.observed)}{p.limit ? ` · ${groupDollars(p.limit)}` : ` · ${p.message}`}</span>}
                 </td>
                 <td className={cx("hidden pr-3 md:table-cell", pad)}>
-                  <span className="t-data text-ink-2" title={p.limit ?? undefined}>{p.observed}</span>
+                  <span className="t-data text-ink-2" title={groupDollars(p.limit) ?? undefined}>{groupDollars(p.observed)}</span>
                 </td>
                 {!compact && (
                   <td className={cx("hidden pr-3 xl:table-cell", pad)}>
-                    <span className="t-data text-muted">{p.limit}</span>
+                    <span className="t-data text-muted">{groupDollars(p.limit)}</span>
                   </td>
                 )}
                 <td className={cx("w-[96px] pr-4 text-right sm:pr-5", pad)}><RuleResult outcome={p.outcome} /></td>

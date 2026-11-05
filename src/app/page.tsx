@@ -19,11 +19,14 @@ const SCENARIOS: { l: string; q: string; tone: Tone; outcome: string; amount: st
   { l: "E", q: "What if the payment fails?", tone: "block", outcome: "Not paid, then recovered", amount: "$96.00" },
 ];
 
+// Recorded from the verified PayPal Sandbox run (docs/SANDBOX_TRANSACTION_EVIDENCE.md). Not live data.
 const LEDGER: { t: string; e: string; who: string; amount: string; tone: Tone; state: string }[] = [
-  { t: "14:02:11", e: "decision.made", who: "AgentPay Guard", amount: "$640.00", tone: "review", state: "Needs review" },
-  { t: "14:05:47", e: "review.approved", who: "M. Okafor", amount: "$640.00", tone: "allow", state: "Allowed" },
-  { t: "14:06:02", e: "checkout.created", who: "S. Lindqvist", amount: "$640.00", tone: "review", state: "Waiting for payer" },
-  { t: "14:06:30", e: "payment.completed", who: "PayPal", amount: "$640.00", tone: "allow", state: "Paid" },
+  { t: "17:06:21", e: "request.received", who: "research-assistant", amount: "$18.00", tone: "neutral", state: "Received" },
+  { t: "17:06:24", e: "decision.made", who: "8 of 8 rules pass · AI risk 5", amount: "$18.00", tone: "allow", state: "Allowed" },
+  { t: "17:06:25", e: "checkout.created", who: "PayPal order 2UE5…4120", amount: "$18.00", tone: "review", state: "Waiting for payer" },
+  { t: "17:07:29", e: "webhook.received", who: "CHECKOUT.ORDER.APPROVED", amount: "", tone: "review", state: "Payer approved" },
+  { t: "17:07:53", e: "payment.completed", who: "Capture 32E6…1633", amount: "$18.00", tone: "allow", state: "Paid" },
+  { t: "17:08:13", e: "webhook.received", who: "PAYMENT.CAPTURE.COMPLETED", amount: "", tone: "allow", state: "Paid" },
 ];
 
 export default function Landing() {
@@ -111,20 +114,21 @@ export default function Landing() {
             <div className="lg:col-span-4">
               <h2 id="ledger-title" className="t-display-m">Every decision is written down.</h2>
               <p className="mt-3 max-w-[32ch] t-body text-ink-2">Append-only and hash-chained, so an edited row breaks the chain.</p>
+              <p className="mt-6 t-label text-muted">Recorded · 2026-11-05 UTC</p>
             </div>
             <div className="min-w-0 lg:col-span-8">
               <ol className="border-t border-rule">
                 {LEDGER.map((row) => (
-                  <li key={row.e} className="grid grid-cols-[72px_1fr_auto] items-baseline gap-x-4 border-b border-rule py-3 sm:grid-cols-[80px_180px_1fr_96px_auto]">
+                  <li key={row.t} className="grid grid-cols-[72px_1fr_auto] items-baseline gap-x-4 border-b border-rule py-3 sm:grid-cols-[72px_160px_1fr_72px_136px]">
                     <span className="t-data text-muted">{row.t}</span>
                     <span className="t-data text-ink">{row.e}</span>
-                    <span className="hidden t-small text-ink-2 sm:block">{row.who}</span>
+                    <span className="hidden min-w-0 truncate t-small text-ink-2 sm:block">{row.who}</span>
                     <span className="hidden text-right t-amount text-ink-2 sm:block">{row.amount}</span>
                     <span className="text-right"><StatusLabel tone={row.tone}>{row.state}</StatusLabel></span>
                   </li>
                 ))}
               </ol>
-              <p className="mt-3 t-small text-muted">{COPY.ledgerSample}</p>
+              <p className="mt-3 t-small text-muted">{COPY.ledgerEvidence}</p>
             </div>
           </div>
         </section>
@@ -140,7 +144,7 @@ export default function Landing() {
       <footer className="border-t border-rule">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-3 py-6 gutter sm:flex-row sm:items-center sm:justify-between">
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 t-small text-muted">
-            <EnvTag /> <span>Fictional data · PayPal Sandbox · Built for the PayPal AI Hackathon 2026</span>
+            <EnvTag /> <span>Fictional merchants and agents · PayPal Sandbox · Built for the PayPal AI Hackathon 2026</span>
           </p>
           <PacificClock />
         </div>
